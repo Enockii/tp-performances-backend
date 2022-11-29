@@ -4,6 +4,7 @@ namespace App\Services\Hotel;
 
 use App\Common\FilterException;
 use App\Common\SingletonTrait;
+use App\Common\Timers;
 use App\Entities\HotelEntity;
 use App\Entities\RoomEntity;
 use App\Services\Room\RoomService;
@@ -44,6 +45,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @return string|null
    */
   protected function getMeta ( int $userId, string $key ) : ?string {
+      /* TIMER */
+      $timer = Timers::getInstance();
+      $timerId = $timer->startTimer('getMeta');
+      /* /TIMER */
+
     $db = $this->getDB();
     $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
     $stmt->execute();
@@ -54,6 +60,10 @@ class UnoptimizedHotelService extends AbstractHotelService {
       if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
         $output = $row['meta_value'];
     }
+
+    /* TIMER */
+      $timer->endTimer('getMeta', $timerId);
+    /* /TIMER*/
     
     return $output;
   }
@@ -68,6 +78,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @noinspection PhpUnnecessaryLocalVariableInspection
    */
   protected function getMetas ( HotelEntity $hotel ) : array {
+      /* TIMER */
+      $timer = Timers::getInstance();
+      $timerId = $timer->startTimer('getMetas');
+      /* /TIMER */
+
     $metaDatas = [
       'address' => [
         'address_1' => $this->getMeta( $hotel->getId(), 'address_1' ),
@@ -81,7 +96,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
       'coverImage' =>  $this->getMeta( $hotel->getId(), 'coverImage' ),
       'phone' =>  $this->getMeta( $hotel->getId(), 'phone' ),
     ];
-    
+
+      /* TIMER */
+      $timer->endTimer('getMetas', $timerId);
+      /* /TIMER*/
+
     return $metaDatas;
   }
   
@@ -95,6 +114,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @noinspection PhpUnnecessaryLocalVariableInspection
    */
   protected function getReviews ( HotelEntity $hotel ) : array {
+      /* TIMER */
+      $timer = Timers::getInstance();
+      $timerId = $timer->startTimer('getReviews');
+      /* /TIMER */
+
     // Récupère tous les avis d'un hotel
     $stmt = $this->getDB()->prepare( "SELECT * FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review'" );
     $stmt->execute( [ 'hotelId' => $hotel->getId() ] );
@@ -109,6 +133,10 @@ class UnoptimizedHotelService extends AbstractHotelService {
       'rating' => round( array_sum( $reviews ) / count( $reviews ) ),
       'count' => count( $reviews ),
     ];
+
+      /* TIMER */
+      $timer->endTimer('getReviews', $timerId);
+      /* /TIMER*/
     
     return $output;
   }
