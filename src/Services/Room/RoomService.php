@@ -2,20 +2,17 @@
 
 namespace App\Services\Room;
 
+use App\Common\PDOSingleton;
 use App\Entities\RoomEntity;
 use PDO;
 
 class RoomService extends AbstractRoomService {
-  
-  private PDO $db;
-  
-  public function __construct() {
-    $this->db = new PDO( "mysql:host=db;dbname=tp;charset=utf8mb4", "root", "root" );
-  }
-  
-  protected function getDB() : PDO {
-    return $this->db;
-  }
+
+  public function __construct() { }
+
+    protected function getDB () : PDO {
+        return PDOSingleton::get();
+    }
   
   public function get(int $id) : RoomEntity {
     $stmt = $this->getDB()->prepare("SELECT ID, post_title FROM wp_posts WHERE ID = :roomId AND post_type = 'room'");
