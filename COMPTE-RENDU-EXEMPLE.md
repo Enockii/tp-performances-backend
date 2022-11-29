@@ -49,15 +49,15 @@ SELECT meta_value FROM wp_usermeta WHERE user_id = :user_id AND meta_key = :key;
 
 
 
-#### Amélioration de la méthode `getCheapestRoom()` :
+#### Amélioration de la méthode `getReviews()` :
 
-- **Avant** TEMPS
+- **Avant** 7.93s
 
 ```sql
 SELECT * FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';
 ```
 
-- **Après** TEMPS
+- **Après** 6.33s
 
 ```sql
 SELECT AVG(meta_value) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';
