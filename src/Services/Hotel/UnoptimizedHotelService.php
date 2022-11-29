@@ -53,29 +53,26 @@ class UnoptimizedHotelService extends AbstractHotelService {
    *
    * @return string|null
    */
-  protected function getMeta ( int $userId, string $key ) : ?string {
-      /* TIMER */
-      $timer = Timers::getInstance();
-      $timerId = $timer->startTimer('getMeta');
-      /* /TIMER */
+    protected function getMeta ( int $userId, string $key ) : ?string {
+        /* TIMER */
+        $timer = Timers::getInstance();
+        $timerId = $timer->startTimer('getMeta');
+        /* /TIMER */
+        $db = $this->getDB();
+        $stmt = $db->prepare( "SELECT meta_value FROM wp_usermeta WHERE user_id = :user_id AND meta_key = :key" );
+        $stmt->execute([
+            'user_id' => $userId,
+            'key' => $key
+        ]);
 
-    $db = $this->getDB();
-    $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
-    $stmt->execute();
-    
-    $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
-    $output = null;
-    foreach ( $result as $row ) {
-      if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
-        $output = $row['meta_value'];
+        $output = $stmt->fetchAll( PDO::FETCH_ASSOC )[0]["meta_value"];
+
+        /* TIMER */
+        $timer->endTimer('getMeta', $timerId);
+        /* /TIMER */
+
+        return $output;
     }
-
-    /* TIMER */
-      $timer->endTimer('getMeta', $timerId);
-    /* /TIMER*/
-    
-    return $output;
-  }
   
   
   /**
@@ -170,7 +167,12 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @return RoomEntity
    */
   protected function getCheapestRoom ( HotelEntity $hotel, array $args = [] ) : RoomEntity {
-    // On charge toutes les chambres de l'hôtel
+      /* TIMER */
+      $timer = Timers::getInstance();
+      $timerId = $timer->startTimer('getCheapestRoom');
+      /* /TIMER */
+
+      // On charge toutes les chambres de l'hôtel
     $stmt = $this->getDB()->prepare( "SELECT * FROM wp_posts WHERE post_author = :hotelId AND post_type = 'room'" );
     $stmt->execute( [ 'hotelId' => $hotel->getId() ] );
     
@@ -209,6 +211,10 @@ class UnoptimizedHotelService extends AbstractHotelService {
         continue;
       
       $filteredRooms[] = $room;
+
+        /* TIMER */
+        $timer->endTimer('getCheapestRoom', $timerId);
+        /* /TIMER*/
     }
     
     // Si aucune chambre ne correspond aux critères, alors on déclenche une exception pour retirer l'hôtel des résultats finaux de la méthode list().
