@@ -211,9 +211,6 @@ class UnoptimizedHotelService extends AbstractHotelService {
       
       $filteredRooms[] = $room;
 
-        /* TIMER */
-        $timer->endTimer('getCheapestRoom', $timerId);
-        /* /TIMER*/
     }
     
     // Si aucune chambre ne correspond aux critères, alors on déclenche une exception pour retirer l'hôtel des résultats finaux de la méthode list().
@@ -232,7 +229,12 @@ class UnoptimizedHotelService extends AbstractHotelService {
       if ( intval( $room->getPrice() ) < intval( $cheapestRoom->getPrice() ) )
         $cheapestRoom = $room;
     endforeach;
-    
+
+
+      /* TIMER */
+      $timer->endTimer('getCheapestRoom', $timerId);
+      /* /TIMER*/
+
     return $cheapestRoom;
   }
   

@@ -65,12 +65,12 @@ SELECT AVG(meta_value) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts
 
 
 
-#### Amélioration de la méthode `METHOD` :
+#### Amélioration de la méthode `getCheapestRoom` :
 
-- **Avant** TEMPS
+- **Avant** 16.01s
 
 ```sql
--- REQ SQL DE BASE
+SELECT * FROM wp_posts WHERE post_author = :hotelId AND post_type = 'room';
 ```
 
 - **Après** TEMPS
