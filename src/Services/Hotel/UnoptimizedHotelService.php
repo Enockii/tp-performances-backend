@@ -59,6 +59,17 @@ class UnoptimizedHotelService extends AbstractHotelService {
         $timerId = $timer->startTimer('getMeta');
         /* /TIMER */
 
+        /*$db = $this->getDB();
+        $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
+        $stmt->execute();
+
+        $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
+        $output = null;
+        foreach ( $result as $row ) {
+            if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
+                $output = $row['meta_value'];
+        }*/
+
         $db = $this->getDB();
         $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
         $stmt->execute();
@@ -204,6 +215,9 @@ class UnoptimizedHotelService extends AbstractHotelService {
       ";
 
       $whereClauses = [];
+
+      $whereClauses[] = 'post.post_author = :hotelID';
+
       if ( isset( $args['surface']['min'] ) )
           $whereClauses[] = 'SurfaceData.meta_value >= :surfaceMin';
 
@@ -211,21 +225,20 @@ class UnoptimizedHotelService extends AbstractHotelService {
           $whereClauses[] = 'SurfaceData.meta_value <= :surfaceMax';
 
       if ( isset( $args['price']['min'] ) )
-          $whereClauses[] = '(PriceData.meta_key = \'price\' AND PriceData.meta_value >= :priceMin)';
+          $whereClauses[] = 'PriceData.meta_value >= :priceMin';
 
       if ( isset( $args['price']['max'] ) )
-          $whereClauses[] = '(PriceData.meta_key = \'price\' AND PriceData.meta_value <= :priceMax)';
+          $whereClauses[] = 'PriceData.meta_value <= :priceMax';
 
       if ( isset( $args['rooms'] ) )
-          $whereClauses[] = '(BedroomsCountData.meta_key = \'bedrooms_count\' AND BedroomsCountData.meta_value >= :roomsBed)';
+          $whereClauses[] = 'BedroomsCountData.meta_value >= :roomsBed';
 
       if ( isset( $args['bathRooms'] ) )
-          $whereClauses[] = '(BathroomsCountData.meta_key = \'bathrooms_count\' AND BathroomsCountData.meta_value >= :bathRooms)';
+          $whereClauses[] = 'BathroomsCountData.meta_value >= :bathRooms';
 
-      /*if ( isset( $args['types'] ) )
-          $whereClauses[] = '(TypeData.meta_key AND TypeData.meta_value = :types)';*/
+      if ( isset( $args['types'] ) && ! empty( $args['types'] ) )
+          $whereClauses[] = 'TypeData.meta_value :types';
 
-      $whereClauses[] = 'post.post_author = :hotelID';
 
       /*Si on a des clauses WHERE, alors on les ajoute à la requête*/
       if ( $whereClauses != [] )
@@ -236,8 +249,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
 
       $hotelID = $hotel->getId();
       $stmt->bindParam('hotelID', $hotelID, PDO::PARAM_INT);
-      /* On associe les placeholder aux valeurs de $args,*/
-      /* on doit le faire ici, car nous n'avions pas accès au $stmt avant*/
+
       if ( isset( $args['surface']['min'] ) )
           $stmt->bindParam('surfaceMin', $args['surface']['min'], PDO::PARAM_INT);
 
@@ -251,23 +263,22 @@ class UnoptimizedHotelService extends AbstractHotelService {
           $stmt->bindParam('priceMax', $args['price']['max'], PDO::PARAM_INT);
 
       if ( isset( $args['rooms'] ) )
-          $stmt->bindParam('BedroomsCountData', $args['rooms'], PDO::PARAM_INT);
+          $stmt->bindParam('roomsBed', $args['rooms'], PDO::PARAM_INT);
 
       if ( isset( $args['bathRooms'] ) )
-          $stmt->bindParam('BathroomsCountData', $args['bathRooms'], PDO::PARAM_INT);
+          $stmt->bindParam('bathRooms', $args['bathRooms'], PDO::PARAM_INT);
 
-      /*if ( isset( $args['types'] ) )
-          $stmt->bindParam('TypeData', $args['types'], PDO::PARAM_INT);*/
+      if ( isset( $args['types'] ) && ! empty( $args['types'] ) ) {
+          $queryIn = "IN(\"" . implode("\", ", $args["types"]) . "\")";
+          $stmt->bindParam('types', $queryIn, PDO::PARAM_INT);
+      }
 
+      dump($query);
 
-      //dump($query);
-      //die();
       $stmt->execute();
       $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-      //var_dump($stmt->fetchAll(PDO::FETCH_ASSOC));
-
-      //var_dump($results);
+      //dump($results);
 
       $priceMin = 9999;
       $index = -1;
@@ -286,8 +297,6 @@ class UnoptimizedHotelService extends AbstractHotelService {
       $cheapestRoom->setSurface( $results[$index]['surface'] );
       $cheapestRoom->setType( $results[$index]['type'] );
       $cheapestRoom->setPrice( $results[$index]['price'] );
-
-
 
 
       /* TIMER */
