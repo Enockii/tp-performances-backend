@@ -9,7 +9,7 @@ Vous pouvez utiliser ce [GSheets](https://docs.google.com/spreadsheets/d/13Hw27U
 - `getMeta` : 4.21s
 - `getMetas` : 4.43s
 - `getReviews` : 8.96s
-- `getCheapestRoom` : 14.61s
+- `getCheapestRoom` : 16.12s
 
 
 
@@ -28,7 +28,7 @@ Vous pouvez utiliser ce [GSheets](https://docs.google.com/spreadsheets/d/13Hw27U
 
 **Temps de chargement globaux** 
 
-- **Avant** 26.48s
+- **Avant** 29.14s
 
 - **Après** TEMPS
 
@@ -60,25 +60,93 @@ SELECT * FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp
 - **Après** 6.33s
 
 ```sql
-SELECT AVG(meta_value) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';
+SELECT ROUND(AVG(CAST(meta_value AS UNSIGNED INTEGER))) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';
 ```
 
 
 
 #### Amélioration de la méthode `getCheapestRoom` :
 
-- **Avant** 16.01s
+- **Avant** 16.59s
 
 ```sql
 SELECT * FROM wp_posts WHERE post_author = :hotelId AND post_type = 'room';
 ```
 
-- **Après** TEMPS
+- **Après** 12.03s
 
 ```sql
--- NOUVELLE REQ SQL
-```
+SELECT post.ID,
+       MIN(CAST(PriceData.meta_value AS float)) AS price,
+       CAST(SurfaceData.meta_value AS int) AS surface,
+       CAST(BedroomsCountData.meta_value AS int) AS bedrooms,
+       CAST(BathroomsCountData.meta_value AS int) AS bathrooms,
+       TypeData.meta_value AS types,
+       CoverImageData.meta_value AS coverImage
 
+FROM tp.wp_posts AS post
+
+      INNER JOIN tp.wp_postmeta AS PriceData
+                 ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+
+      INNER JOIN tp.wp_postmeta AS SurfaceData
+                 ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+
+      INNER JOIN tp.wp_postmeta AS TypeData
+                 ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+
+      INNER JOIN tp.wp_postmeta AS BathroomsCountData
+                 ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+
+      INNER JOIN tp.wp_postmeta AS BedroomsCountData
+                 ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+
+      INNER JOIN tp.wp_postmeta AS CoverImageData
+                 ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+WHERE post.post_author = 200 GROUP BY post.ID
+```
+```sql
+/*Exemple :*/
+SELECT
+ post.ID,
+ MIN(CAST(PriceData.meta_value AS FLOAT)) AS price,
+ CAST(SurfaceData.meta_value AS INT) AS surface,
+ CAST(BedroomsCountData.meta_value AS INT) AS bedrooms,
+ CAST(BathroomsCountData.meta_value AS INT) AS bathrooms,
+ TypeData.meta_value AS TYPES,
+ CoverImageData.meta_value AS coverImage
+FROM
+ tp.wp_posts AS post
+  INNER JOIN tp.wp_postmeta AS PriceData
+             ON
+              post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+  INNER JOIN tp.wp_postmeta AS SurfaceData
+             ON
+              post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+  INNER JOIN tp.wp_postmeta AS TypeData
+             ON
+              post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+  INNER JOIN tp.wp_postmeta AS BathroomsCountData
+             ON
+                post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+  INNER JOIN tp.wp_postmeta AS BedroomsCountData
+             ON
+                post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+  INNER JOIN tp.wp_postmeta AS CoverImageData
+             ON
+                post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+WHERE
+ post.post_author = 200 
+  AND SurfaceData.meta_value >= 130 
+  AND SurfaceData.meta_value <= 150 
+  AND PriceData.meta_value >= 200 
+  AND PriceData.meta_value <= 230 
+  AND BedroomsCountData.meta_value >= 5 
+  AND BathroomsCountData.meta_value >= 5 
+  AND TypeData.meta_value IN('Maison', 'Appartement')
+GROUP BY post.ID;
+    
+```
 
 
 ## Question 5 : Réduction du nombre de requêtes SQL pour `METHOD`
