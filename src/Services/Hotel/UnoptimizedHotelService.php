@@ -59,27 +59,14 @@ class UnoptimizedHotelService extends AbstractHotelService {
         $timerId = $timer->startTimer('getMeta');
         /* /TIMER */
 
-        /*$db = $this->getDB();
-        $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
-        $stmt->execute();
-
-        $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
-        $output = null;
-        foreach ( $result as $row ) {
-            if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
-                $output = $row['meta_value'];
-        }*/
-
         $db = $this->getDB();
-        $stmt = $db->prepare( "SELECT * FROM wp_usermeta" );
-        $stmt->execute();
+        $stmt = $db->prepare( "SELECT meta_value FROM wp_usermeta WHERE user_id = :user_id AND meta_key = :key" );
+        $stmt->execute([
+            'user_id' => $userId,
+            'key' => $key
+        ]);
 
-        $result = $stmt->fetchAll( PDO::FETCH_ASSOC );
-        $output = null;
-        foreach ( $result as $row ) {
-            if ( $row['user_id'] === $userId && $row['meta_key'] === $key )
-                $output = $row['meta_value'];
-        }
+        $output = $stmt->fetchAll( PDO::FETCH_ASSOC )[0]["meta_value"];
 
         /* TIMER */
         $timer->endTimer('getMeta', $timerId);
@@ -140,8 +127,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
         /* /TIMER */
 
         // Récupère tous les avis d'un hotel
-        //$stmt = $this->getDB()->prepare( "SELECT ROUND(AVG(CAST(meta_value AS UNSIGNED INTEGER))) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';" );
-        /*$stmt = $this->getDB()->prepare( "SELECT ROUND(AVG(CAST(meta_value AS UNSIGNED INTEGER))) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';" );
+        $stmt = $this->getDB()->prepare( "SELECT ROUND(AVG(CAST(meta_value AS UNSIGNED INTEGER))) AS rating, COUNT(meta_value) AS ratingCount FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review';" );
         $stmt->execute( [ 'hotelId' => $hotel->getId() ] );
         $reviews = $stmt->fetchAll( PDO::FETCH_ASSOC )[0];
 
@@ -149,25 +135,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
         $output = [
             'rating' => intval($reviews['rating']),
             'count' => $reviews['ratingCount'],
-        ];*/
-
-
-
-        $stmt = $this->getDB()->prepare( "SELECT * FROM wp_posts, wp_postmeta WHERE wp_posts.post_author = :hotelId AND wp_posts.ID = wp_postmeta.post_id AND meta_key = 'rating' AND post_type = 'review'" );
-        $stmt->execute( [ 'hotelId' => $hotel->getId() ] );
-        $reviews = $stmt->fetchAll( PDO::FETCH_ASSOC );
-
-        // Sur les lignes, ne garde que la note de l'avis
-        $reviews = array_map( function ( $review ) {
-            return intval( $review['meta_value'] );
-        }, $reviews );
-
-        $output = [
-            'rating' => round( array_sum( $reviews ) / count( $reviews ) ),
-            'count' => count( $reviews ),
         ];
-
-
 
         /* TIMER */
         $timer->endTimer('getReviews', $timerId);
@@ -202,7 +170,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
       $timerId = $timer->startTimer('getCheapestRoom');
       /* /TIMER */
 
-
+      /* Début de la requete avec le SELECT et tous les INNER JOIN
+         pour rassembler toutes les données qui vont être nécessaires*/
       $query = "
         SELECT post.ID,
           MIN(CAST(PriceData.meta_value AS float)) AS price,
@@ -233,6 +202,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
             ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
       ";
 
+      /* Suite de la requête : les WHERE, qui dépendent des critères de l'utilisateur donnés par $args[] */
       $whereClauses[] = 'post.post_author = :hotelID';
 
       if (isset($args['surface']['min']))
@@ -257,7 +227,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
           $whereClauses[] = "TypeData.meta_value IN('" . implode("', '", $args["types"]) . "')";
 
 
-      /*Si on a des clauses WHERE, alors on les ajoute à la requête*/
+      /*On ajoute les clauses WHERE à la requête*/
       if ($whereClauses != [])
           $query .= " WHERE " . implode(' AND ', $whereClauses);
 
@@ -266,8 +236,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
       /*On récupère le PDOStatement*/
       $stmt = $this->getDB()->prepare($query);
 
+      /*On récupère l'ID de l'hotel */
       $hotelID = $hotel->getId();
       $stmt->bindParam('hotelID', $hotelID, PDO::PARAM_INT);
+
+      /*Bind des paramètres en fonction des clauses WHERE (donc des critères grâce à $args[])*/
       if (isset($args['surface']['min']))
           $stmt->bindParam('surfaceMin', $args['surface']['min'], PDO::PARAM_INT);
 
@@ -288,9 +261,11 @@ class UnoptimizedHotelService extends AbstractHotelService {
 
       $stmt->execute();
 
+      /*On regarde si la requête trouve bien une chambre correspond aux critères, sinon on génère une exception*/
       if(!($results = $stmt->fetch(PDO::FETCH_ASSOC)))
-          throw new FilterException("Aucune chambre ne correspond aux critèrres.");
-      //dump($results);
+          throw new FilterException("Aucune chambre ne correspond aux critères.");
+
+      /*Si la requête retourne un résultat : l'instancie*/
       $cheapestRoom = new RoomEntity();
       $cheapestRoom->setId($results['ID']);
       $cheapestRoom->setPrice($results['price']);
