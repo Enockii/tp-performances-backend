@@ -67,85 +67,58 @@ SELECT ROUND(AVG(CAST(meta_value AS UNSIGNED INTEGER))) AS rating, COUNT(meta_va
 
 #### Amélioration de la méthode `getCheapestRoom` :
 
-- **Avant** 16.59s
+- **Avant** 16.59s (331ms pour la recherche du contrôle de non regression)
 
 ```sql
 SELECT * FROM wp_posts WHERE post_author = :hotelId AND post_type = 'room';
 ```
 
-- **Après** 11.95s
+- **Après** 11.95s (277ms pour la recherche du contrôle de non regression)
 
 ```sql
 SELECT post.ID,
+       post.post_title AS title,
        MIN(CAST(PriceData.meta_value AS float)) AS price,
        CAST(SurfaceData.meta_value AS int) AS surface,
+       TypeData.meta_value AS types,
        CAST(BedroomsCountData.meta_value AS int) AS bedrooms,
        CAST(BathroomsCountData.meta_value AS int) AS bathrooms,
-       TypeData.meta_value AS types,
        CoverImageData.meta_value AS coverImage
 
 FROM tp.wp_posts AS post
 
-      INNER JOIN tp.wp_postmeta AS PriceData
-                 ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
-
       INNER JOIN tp.wp_postmeta AS SurfaceData
-                 ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+                 ON post.ID = SurfaceData.post_id
+                  AND SurfaceData.meta_key = 'surface'
+
+      INNER JOIN tp.wp_postmeta AS PriceData
+                 ON post.ID = PriceData.post_id
+                  AND PriceData.meta_key = 'price'
 
       INNER JOIN tp.wp_postmeta AS TypeData
-                 ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
-
-      INNER JOIN tp.wp_postmeta AS BathroomsCountData
-                 ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+                 ON post.ID = TypeData.post_id
+                  AND TypeData.meta_key = 'type'
 
       INNER JOIN tp.wp_postmeta AS BedroomsCountData
-                 ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+                 ON post.ID = BedroomsCountData.post_id
+                  AND BedroomsCountData.meta_key = 'bedrooms_count'
+
+      INNER JOIN tp.wp_postmeta AS BathroomsCountData
+                 ON post.ID = BathroomsCountData.post_id
+                  AND BathroomsCountData.meta_key = 'bathrooms_count'
 
       INNER JOIN tp.wp_postmeta AS CoverImageData
                  ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
-WHERE post.post_author = 200 GROUP BY post.ID
-```
-```sql
-/*Exemple :*/
-SELECT
- post.ID,
- MIN(CAST(PriceData.meta_value AS FLOAT)) AS price,
- CAST(SurfaceData.meta_value AS INT) AS surface,
- CAST(BedroomsCountData.meta_value AS INT) AS bedrooms,
- CAST(BathroomsCountData.meta_value AS INT) AS bathrooms,
- TypeData.meta_value AS TYPES,
- CoverImageData.meta_value AS coverImage
-FROM
- tp.wp_posts AS post
-  INNER JOIN tp.wp_postmeta AS PriceData
-             ON
-              post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
-  INNER JOIN tp.wp_postmeta AS SurfaceData
-             ON
-              post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
-  INNER JOIN tp.wp_postmeta AS TypeData
-             ON
-              post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
-  INNER JOIN tp.wp_postmeta AS BathroomsCountData
-             ON
-                post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
-  INNER JOIN tp.wp_postmeta AS BedroomsCountData
-             ON
-                post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
-  INNER JOIN tp.wp_postmeta AS CoverImageData
-             ON
-                post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
-WHERE
- post.post_author = 200 
-  AND SurfaceData.meta_value >= 130 
-  AND SurfaceData.meta_value <= 150 
-  AND PriceData.meta_value >= 200 
-  AND PriceData.meta_value <= 230 
-  AND BedroomsCountData.meta_value >= 5 
-  AND BathroomsCountData.meta_value >= 5 
+
+WHERE post.post_author = :hotelID AND post.post_type = 'room'
+  AND SurfaceData.meta_value >= :surfaceMin
+  AND SurfaceData.meta_value <= :surfaceMax
+  AND PriceData.meta_value >= :priceMin
+  AND PriceData.meta_value <= :priceMax
+  AND BedroomsCountData.meta_value >= :roomsBed
+  AND BathroomsCountData.meta_value >= :bathRooms
   AND TypeData.meta_value IN('Maison', 'Appartement')
 GROUP BY post.ID;
-    
 ```
 
 
@@ -154,7 +127,7 @@ GROUP BY post.ID;
 |                              | **Avant** | **Après** |
 |------------------------------|-----------|-----------|
 | Nombre d'appels de `getDB()` | NOMBRE    | NOMBRE    |
- | Temps de `METHOD`            | TEMPS     | TEMPS     |
+| Temps de `METHOD`            | TEMPS     | TEMPS     |
 
 ## Question 6 : Création d'un service basé sur une seule requête SQL
 
