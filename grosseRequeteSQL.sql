@@ -227,3 +227,119 @@ $query = "
 WHERE TYPE IN ("Appartement", "Maison")
 
 "IN('".implode("', ", $args["type"])."')"
+
+
+
+
+  protected function getCheapestRoom ( HotelEntity $hotel, array $args = [] ) : RoomEntity
+  {
+      /* TIMER */
+      $timer = Timers::getInstance();
+      $timerId = $timer->startTimer('getCheapestRoom');
+      /* /TIMER */
+
+
+      $query = "
+        SELECT post.ID,
+          MIN(CAST(PriceData.meta_value AS float)) AS price,
+          CAST(SurfaceData.meta_value AS int) AS surface,
+          CAST(BedroomsCountData.meta_value AS int) AS bedrooms,
+          CAST(BathroomsCountData.meta_value AS int) AS bathrooms,
+          TypeData.meta_value AS types,
+          CoverImageData.meta_value AS coverImage
+        
+          FROM tp.wp_posts AS post
+        
+          INNER JOIN tp.wp_postmeta AS PriceData
+            ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+        
+          INNER JOIN tp.wp_postmeta AS SurfaceData
+            ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+        
+          INNER JOIN tp.wp_postmeta AS TypeData
+            ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+        
+          INNER JOIN tp.wp_postmeta AS BathroomsCountData
+            ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+        
+          INNER JOIN tp.wp_postmeta AS BedroomsCountData
+            ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+        
+          INNER JOIN tp.wp_postmeta AS CoverImageData
+            ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+      ";
+
+      $whereClauses[] = 'post.post_author = :hotelID';
+
+      if (isset($args['surface']['min']))
+          $whereClauses[] = 'SurfaceData.meta_value >= :surfaceMin';
+
+      if (isset($args['surface']['max']))
+          $whereClauses[] = 'SurfaceData.meta_value <= :surfaceMax';
+
+      if (isset($args['price']['min']))
+          $whereClauses[] = 'PriceData.meta_value >= :priceMin';
+
+      if (isset($args['price']['max']))
+          $whereClauses[] = 'PriceData.meta_value <= :priceMax';
+
+      if (isset($args['rooms']))
+          $whereClauses[] = 'BedroomsCountData.meta_value >= :roomsBed';
+
+      if (isset($args['bathRooms']))
+          $whereClauses[] = 'BathroomsCountData.meta_value >= :bathRooms';
+
+      if (isset($args['types']) && !empty($args['types']))
+          $whereClauses[] = "TypeData.meta_value IN('" . implode("', '", $args["types"]) . "')";
+
+
+      /*Si on a des clauses WHERE, alors on les ajoute à la requête*/
+      if ($whereClauses != [])
+          $query .= " WHERE " . implode(' AND ', $whereClauses);
+
+      $query .= " GROUP BY post.ID;";
+
+      /*On récupère le PDOStatement*/
+      $stmt = $this->getDB()->prepare($query);
+
+      $hotelID = $hotel->getId();
+      $stmt->bindParam('hotelID', $hotelID, PDO::PARAM_INT);
+      if (isset($args['surface']['min']))
+          $stmt->bindParam('surfaceMin', $args['surface']['min'], PDO::PARAM_INT);
+
+      if (isset($args['surface']['max']))
+          $stmt->bindParam('surfaceMax', $args['surface']['max'], PDO::PARAM_INT);
+
+      if (isset($args['price']['min']))
+          $stmt->bindParam('priceMin', $args['price']['min'], PDO::PARAM_INT);
+
+      if (isset($args['price']['max']))
+          $stmt->bindParam('priceMax', $args['price']['max'], PDO::PARAM_INT);
+
+      if (isset($args['rooms']))
+          $stmt->bindParam('roomsBed', $args['rooms'], PDO::PARAM_INT);
+
+      if (isset($args['bathRooms']))
+          $stmt->bindParam('bathRooms', $args['bathRooms'], PDO::PARAM_INT);
+
+      $stmt->execute();
+
+
+      if(!($results = $stmt->fetch(PDO::FETCH_ASSOC)))
+          throw new FilterException();
+
+      $cheapestRoom = new RoomEntity();
+      $cheapestRoom->setId($results['ID']);
+      $cheapestRoom->setPrice($results['price']);
+      $cheapestRoom->setBathRoomsCount($results['bathrooms']);
+      $cheapestRoom->setBedRoomsCount($results['bedrooms']);
+      $cheapestRoom->setCoverImageUrl($results['coverImage']);
+      $cheapestRoom->setSurface($results['surface']);
+      $cheapestRoom->setType($results['types']);
+
+      /* TIMER */
+      $timer->endTimer('getCheapestRoom', $timerId);
+      /* /TIMER*/
+
+    return $cheapestRoom;
+  }
