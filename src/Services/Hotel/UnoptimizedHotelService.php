@@ -43,38 +43,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
       /* /TIMER*/
     return $pdo;
   }
-  
-  
-  /**
-   * Récupère une méta-donnée de l'instance donnée
-   *
-   * @param int    $userId
-   * @param string $key
-   *
-   * @return string|null
-   */
-    protected function getMeta ( int $userId, string $key ) : ?string {
-        /* TIMER */
-        $timer = Timers::getInstance();
-        $timerId = $timer->startTimer('getMeta');
-        /* /TIMER */
-
-        $db = $this->getDB();
-        $stmt = $db->prepare( "SELECT meta_value FROM wp_usermeta WHERE user_id = :user_id AND meta_key = :key" );
-        $stmt->execute([
-            'user_id' => $userId,
-            'key' => $key
-        ]);
-
-        $output = $stmt->fetchAll( PDO::FETCH_ASSOC )[0]["meta_value"];
-
-        /* TIMER */
-        $timer->endTimer('getMeta', $timerId);
-        /* /TIMER */
-
-        return $output;
-    }
-  
+   
   
   /**
    * Récupère toutes les meta données de l'instance donnée
@@ -90,18 +59,74 @@ class UnoptimizedHotelService extends AbstractHotelService {
       $timerId = $timer->startTimer('getMetas');
       /* /TIMER */
 
+      $stmt = $this->getDB()->prepare( "
+        SELECT address1Data.meta_value AS address_1,
+                  address2Data.meta_value AS address_2,
+                  addressCityData.meta_value AS address_city,
+                  addressZipData.meta_value AS address_zip,
+                  addressCountryData.meta_value AS address_country,
+                  CAST(geoLatData.meta_value AS float) AS geo_lat,
+                  CAST(geoLngData.meta_value AS float) AS geo_lng,
+                  phoneData.meta_value AS phone,
+                  emailData.meta_value AS email,
+                  coverImageData.meta_value AS coverImage
+        
+          FROM tp.wp_usermeta AS hotelData
+          
+          INNER JOIN tp.wp_usermeta AS address1Data
+            ON hotelData.user_id = address1Data.user_id AND address1Data.meta_key = 'address_1'
+                
+          INNER JOIN tp.wp_usermeta AS address2Data
+            ON hotelData.user_id = address2Data.user_id AND address2Data.meta_key = 'address_2'
+        
+          INNER JOIN tp.wp_usermeta AS addressCityData
+            ON hotelData.user_id = addressCityData.user_id AND addressCityData.meta_key = 'address_city'
+        
+          INNER JOIN tp.wp_usermeta AS addressZipData
+            ON hotelData.user_id = addressZipData.user_id AND addressZipData.meta_key = 'address_zip'
+        
+          INNER JOIN tp.wp_usermeta AS addressCountryData
+            ON hotelData.user_id = addressCountryData.user_id AND addressCountryData.meta_key = 'address_country'
+        
+          INNER JOIN tp.wp_usermeta AS geoLatData
+            ON hotelData.user_id = geoLatData.user_id AND geoLatData.meta_key = 'geo_lat'
+        
+          INNER JOIN tp.wp_usermeta AS geoLngData
+            ON hotelData.user_id = geoLngData.user_id AND geoLngData.meta_key = 'geo_lng'
+        
+          INNER JOIN tp.wp_usermeta AS coverImageData
+            ON hotelData.user_id = coverImageData.user_id AND coverImageData.meta_key = 'coverImage'
+        
+          INNER JOIN tp.wp_usermeta AS phoneData
+            ON hotelData.user_id = phoneData.user_id AND phoneData.meta_key = 'phone'
+        
+          INNER JOIN tp.wp_usermeta AS emailData
+            ON hotelData.user_id = emailData.user_id AND emailData.meta_key = 'email'
+        
+          WHERE hotelData.user_id = :hotelID
+        
+          GROUP BY hotelData.user_id;
+
+        " );
+      $stmt->execute([
+          'hotelID' => $hotel->getId(),
+      ]);
+
+      $results = $stmt->fetch( PDO::FETCH_ASSOC );
+      //dump($results);
+
     $metaDatas = [
       'address' => [
-        'address_1' => $this->getMeta( $hotel->getId(), 'address_1' ),
-        'address_2' => $this->getMeta( $hotel->getId(), 'address_2' ),
-        'address_city' => $this->getMeta( $hotel->getId(), 'address_city' ),
-        'address_zip' => $this->getMeta( $hotel->getId(), 'address_zip' ),
-        'address_country' => $this->getMeta( $hotel->getId(), 'address_country' ),
+        'address_1' => $results['address_1'],
+        'address_2' => $results['address_2'],
+        'address_city' => $results['address_city'],
+        'address_zip' =>  $results['address_zip'],
+        'address_country' => $results['address_country'],
       ],
-      'geo_lat' =>  $this->getMeta( $hotel->getId(), 'geo_lat' ),
-      'geo_lng' =>  $this->getMeta( $hotel->getId(), 'geo_lng' ),
-      'coverImage' =>  $this->getMeta( $hotel->getId(), 'coverImage' ),
-      'phone' =>  $this->getMeta( $hotel->getId(), 'phone' ),
+      'geo_lat' => $results['geo_lat'],
+      'geo_lng' => $results['geo_lng'],
+      'coverImage' => $results['coverImage'],
+      'phone' => $results['phone'],
     ];
 
       /* TIMER */
@@ -376,8 +401,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
         // Des FilterException peuvent être déclenchées pour exclure certains hotels des résultats
       }
     }
-    
-    
+
     return $results;
   }
 }
