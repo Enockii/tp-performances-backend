@@ -43,7 +43,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
       /* /TIMER*/
     return $pdo;
   }
-   
+
   
   /**
    * Récupère toutes les meta données de l'instance donnée
