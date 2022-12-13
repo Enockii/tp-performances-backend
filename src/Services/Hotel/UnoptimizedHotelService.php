@@ -11,6 +11,7 @@ use App\Entities\RoomEntity;
 use App\Services\Room\RoomService;
 use Exception;
 use PDO;
+use PDOStatement;
 
 /**
  * Une classe utilitaire pour récupérer les données des magasins stockés en base de données
@@ -24,24 +25,20 @@ class UnoptimizedHotelService extends AbstractHotelService {
   }
 
 
-  /**
-   * Récupère une nouvelle instance de connexion à la base de donnée
-   *
-   * @return PDO
-   * @noinspection PhpUnnecessaryLocalVariableInspection
-   */
-  protected function getDB () : PDO {
+  protected function getDB() : PDO {
       /* TIMER */
       $timer = Timers::getInstance();
       $timerId = $timer->startTimer('getDB');
       /* /TIMER */
 
-    $pdo = PDOSingleton::get();
+
+      $pdo = PDOSingleton::get();
+
 
       /* TIMER */
       $timer->endTimer('getDB', $timerId);
       /* /TIMER*/
-    return $pdo;
+      return $pdo;
   }
 
   
@@ -258,6 +255,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
             $query .= " WHERE " . implode(' AND ', $whereClauses);
 
         $query .= " GROUP BY post.ID;";
+
         /*On récupère le PDOStatement*/
         $stmt = $this->getDB()->prepare($query);
 
@@ -324,7 +322,174 @@ class UnoptimizedHotelService extends AbstractHotelService {
           * cos( deg2rad( $longitudeTo - $longitudeFrom ) )
           + sin( deg2rad( $latitudeTo ) )
           * sin( deg2rad( $latitudeFrom ) ) ) ) ) );
+    /* A faire en sql */
   }
+
+
+
+
+
+
+    protected function getData(array $args) : PDOStatement {
+        /* TIMER */
+        $timer = Timers::getInstance();
+        $timerId = $timer->startTimer('GROSSEREQUETE');
+        /* /TIMER */
+
+
+        $query = "
+                SELECT 
+              hotel.ID AS hotelID,
+              address1Data.meta_value AS address_1,
+              address2Data.meta_value AS address_2,
+              addressCityData.meta_value AS address_city,
+              addressZipData.meta_value AS address_zip,
+              addressCountryData.meta_value AS address_country,
+              CAST(geoLatData.meta_value AS float) AS geo_lat,
+              CAST(geoLngData.meta_value AS float) AS geo_lng,
+              phoneData.meta_value AS phone,
+              emailData.meta_value AS email,
+              coverImageData.meta_value AS coverImage,
+              hotelRoomData.title AS titleRoom,
+              review.rating AS rating,
+              review.ratingCount AS ratingCount
+            
+              FROM tp.wp_users AS hotel
+        
+              INNER JOIN tp.wp_usermeta AS address1Data
+                ON hotel.ID = address1Data.user_id AND address1Data.meta_key = 'address_1'
+                    
+              INNER JOIN tp.wp_usermeta AS address2Data
+                ON hotel.ID = address2Data.user_id AND address2Data.meta_key = 'address_2'
+            
+              INNER JOIN tp.wp_usermeta AS addressCityData
+                ON hotel.ID = addressCityData.user_id AND addressCityData.meta_key = 'address_city'
+            
+              INNER JOIN tp.wp_usermeta AS addressZipData
+                ON hotel.ID = addressZipData.user_id AND addressZipData.meta_key = 'address_zip'
+            
+              INNER JOIN tp.wp_usermeta AS addressCountryData
+                ON hotel.ID = addressCountryData.user_id AND addressCountryData.meta_key = 'address_country'
+            
+              INNER JOIN tp.wp_usermeta AS geoLatData
+                ON hotel.ID = geoLatData.user_id AND geoLatData.meta_key = 'geo_lat'
+            
+              INNER JOIN tp.wp_usermeta AS geoLngData
+                ON hotel.ID = geoLngData.user_id AND geoLngData.meta_key = 'geo_lng'
+            
+              INNER JOIN tp.wp_usermeta AS coverImageData
+                ON hotel.ID = coverImageData.user_id AND coverImageData.meta_key = 'coverImage'
+            
+              INNER JOIN tp.wp_usermeta AS phoneData
+                ON hotel.ID = phoneData.user_id AND phoneData.meta_key = 'phone'
+            
+              INNER JOIN tp.wp_usermeta AS emailData
+                ON hotel.ID = emailData.user_id AND emailData.meta_key = 'email'
+            
+        
+              INNER JOIN (
+                SELECT 
+                      post.post_author AS author,
+                      post.post_title AS title,
+                      MIN(CAST(PriceData.meta_value AS float)) AS price,
+                      CAST(SurfaceData.meta_value AS int) AS surface,
+                      TypeData.meta_value AS types,
+                      CAST(BedroomsCountData.meta_value AS int) AS bedrooms,
+                      CAST(BathroomsCountData.meta_value AS int) AS bathrooms,
+                      CoverImageData.meta_value AS coverImage
+                    
+                      FROM tp.wp_posts AS post
+                    
+                      INNER JOIN tp.wp_postmeta AS SurfaceData
+                        ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+                    
+                      INNER JOIN tp.wp_postmeta AS PriceData
+                        ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+                    
+                      INNER JOIN tp.wp_postmeta AS TypeData
+                        ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+        
+                      INNER JOIN tp.wp_postmeta AS BedroomsCountData
+                        ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+        
+                      INNER JOIN tp.wp_postmeta AS BathroomsCountData
+                        ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+                    
+                      INNER JOIN tp.wp_postmeta AS CoverImageData
+                        ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+        
+                      WHERE post.post_type = 'room'
+        
+                      GROUP BY post.post_author
+        
+              ) AS hotelRoomData ON hotel.ID = hotelRoomData.author
+        
+        
+        
+              INNER JOIN (
+                SELECT 
+                  post_author AS author,
+                  ROUND(AVG(CAST(wp_postmeta.meta_value AS UNSIGNED INTEGER))) AS rating, 
+                  COUNT(wp_postmeta.meta_value) AS ratingCount
+                FROM wp_usermeta, wp_posts, wp_postmeta
+                WHERE wp_usermeta.user_id = wp_posts.post_author 
+                  AND wp_posts.ID = wp_postmeta.post_id 
+                  AND wp_postmeta.meta_key = 'rating' 
+                  AND wp_posts.post_type = 'review'
+                GROUP BY wp_posts.post_author
+              ) AS review ON hotel.ID = review.author
+        
+              GROUP BY hotel.ID;
+      ";
+
+        /* Suite de la requête : les WHERE, qui dépendent des critères de l'utilisateur donnés par $args[] */
+        $whereClauses[] = "post.post_author = :hotelID AND post.post_type = 'room'";
+
+        if ( isset( $args['lat'] ) && isset( $args['lng'] ) && isset( $args['distance'] ) ) {
+            $whereClauses[] = '111.111 * rad2deg( acos( min( 1.0, cos( deg2rad( $latitudeTo ) )
+          * cos( deg2rad( :lat ) )
+          * cos( deg2rad( geo_lng - :lng ) )
+          + sin( deg2rad( geo_lat) )
+          * sin( deg2rad( :lat ) ) ) ) )';
+        }
+
+        if (isset($args['surface']['min']))
+            $whereClauses[] = 'SurfaceData.meta_value >= :surfaceMin';
+
+        if (isset($args['surface']['max']))
+            $whereClauses[] = 'SurfaceData.meta_value <= :surfaceMax';
+
+        if (isset($args['price']['min']))
+            $whereClauses[] = 'PriceData.meta_value >= :priceMin';
+
+        if (isset($args['price']['max']))
+            $whereClauses[] = 'PriceData.meta_value <= :priceMax';
+
+        if (isset($args['rooms']))
+            $whereClauses[] = 'BedroomsCountData.meta_value >= :roomsBed';
+
+        if (isset($args['bathRooms']))
+            $whereClauses[] = 'BathroomsCountData.meta_value >= :bathRooms';
+
+        if (isset($args['types']) && !empty($args['types']))
+            $whereClauses[] = "TypeData.meta_value IN('" . implode("', '", $args["types"]) . "')";
+
+
+        /*On ajoute les clauses WHERE à la requête*/
+        if ($whereClauses != [])
+            $query .= " WHERE " . implode(' AND ', $whereClauses);
+
+        $query .= " GROUP BY post.ID;";
+
+        /*On récupère le PDOStatement*/
+        $stmt = PDOSingleton::get()->prepare($query);
+
+        /* TIMER */
+        $timer->endTimer('GROSSEREQUETE', $timerId);
+        /* /TIMER*/
+
+        return $stmt;
+    }
   
   
   /**
@@ -336,7 +501,9 @@ class UnoptimizedHotelService extends AbstractHotelService {
     $hotel = ( new HotelEntity() )
       ->setId( $data['ID'] )
       ->setName( $data['display_name'] );
-    
+
+
+
     // Charge les données meta de l'hôtel
     $metasData = $this->getMetas( $hotel );
     $hotel->setAddress( $metasData['address'] );
