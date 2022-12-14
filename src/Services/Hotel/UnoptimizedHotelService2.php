@@ -16,7 +16,7 @@ use PDOStatement;
 /**
  * Une classe utilitaire pour récupérer les données des magasins stockés en base de données
  */
-class UnoptimizedHotelService extends AbstractHotelService {
+class UnoptimizedHotelService2 extends AbstractHotelService {
   
   use SingletonTrait;
 
@@ -340,7 +340,6 @@ class UnoptimizedHotelService extends AbstractHotelService {
         $query = "
               SELECT 
                 hotel.ID AS hotelID,
-                hotel.display_name AS hotelName,
                 address1Data.meta_value AS address_1,
                 address2Data.meta_value AS address_2,
                 addressCityData.meta_value AS address_city,
@@ -351,6 +350,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
                 phoneData.meta_value AS phone,
                 emailData.meta_value AS email,
                 coverImageData.meta_value AS coverImage,
+                hotelRoomData.title AS titleRoom,
                 review.rating AS rating,
                 review.ratingCount AS ratingCount,
                 hotelRoomData.author AS author,
@@ -398,7 +398,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
                 SELECT 
                   post.post_author AS author,
                   post.post_title AS title,
-                  CAST(PriceData.meta_value AS float) AS price,
+                  MIN(CAST(PriceData.meta_value AS float)) AS price,
                   CAST(SurfaceData.meta_value AS int) AS surface,
                   TypeData.meta_value AS types,
                   CAST(BedroomsCountData.meta_value AS int) AS bedrooms,
@@ -425,7 +425,9 @@ class UnoptimizedHotelService extends AbstractHotelService {
                   INNER JOIN tp.wp_postmeta AS CoverImageData
                     ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
     
-                  
+                  WHERE post.post_type = 'room'
+    
+                  GROUP BY post.post_author
     
               ) AS hotelRoomData ON hotel.ID = hotelRoomData.author
         
@@ -445,20 +447,12 @@ class UnoptimizedHotelService extends AbstractHotelService {
 
                 GROUP BY wp_posts.post_author
 
-              ) AS review ON hotel.ID = review.author     
-
-                
+              ) AS review ON hotel.ID = review.author           
         ";
 
-        /*WHERE 111.111
-                * DEGREES(ACOS(LEAST(1.0, COS(RADIANS( CAST(geoLatData.meta_value AS float) ))
-                * COS(RADIANS( 46.9903264 ))
-                * COS(RADIANS( CAST(geoLngData.meta_value AS float) - 3.163412 ))
-                + SIN(RADIANS( CAST(geoLatData.meta_value AS float) ))
-                * SIN(RADIANS( 46.9903264 ))))) < 500*/
         /* Suite de la requête : les WHERE, qui dépendent des critères de l'utilisateur donnés par $args[] */
         //$whereClauses[] = "post.post_author = :hotelID AND post.post_type = 'room'";
-        $whereClauses = [];
+        /*$whereClauses = [];
         if ( isset( $args['lat'] ) && isset( $args['lng'] ) && isset( $args['distance'] ) ) {
             $whereClauses[] = '(111.111 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS( geo_lat ))
                               * COS(RADIANS( :lat ))
@@ -469,33 +463,33 @@ class UnoptimizedHotelService extends AbstractHotelService {
         }
 
         if (isset($args['surface']['min']))
-            $whereClauses[] = 'surface >= :surfaceMin';
+            $whereClauses[] = 'SurfaceData.meta_value >= :surfaceMin';
 
         if (isset($args['surface']['max']))
-            $whereClauses[] = 'surface <= :surfaceMax';
+            $whereClauses[] = 'SurfaceData.meta_value <= :surfaceMax';
 
         if (isset($args['price']['min']))
-            $whereClauses[] = 'price >= :priceMin';
+            $whereClauses[] = 'PriceData.meta_value >= :priceMin';
 
         if (isset($args['price']['max']))
-            $whereClauses[] = 'price <= :priceMax';
+            $whereClauses[] = 'PriceData.meta_value <= :priceMax';
 
         if (isset($args['rooms']))
-            $whereClauses[] = 'bedrooms >= :roomsBed';
+            $whereClauses[] = 'BedroomsCountData.meta_value >= :roomsBed';
 
         if (isset($args['bathRooms']))
-            $whereClauses[] = 'bathrooms >= :bathRooms';
+            $whereClauses[] = 'BathroomsCountData.meta_value >= :bathRooms';
 
         if (isset($args['types']) && !empty($args['types']))
-            $whereClauses[] = "types IN('" . implode("', '", $args["types"]) . "')";
+            $whereClauses[] = "TypeData.meta_value IN('" . implode("', '", $args["types"]) . "')";
 
 
         /*On ajoute les clauses WHERE à la requête*/
-        if ($whereClauses != [])
-            $query .= " WHERE " . implode(' AND ', $whereClauses);
+        /*if ($whereClauses != [])
+            $query .= " WHERE " . implode(' AND ', $whereClauses);*/
 
         $query .= " GROUP BY hotel.ID;";
-        dump($query);
+        //dump($query);
         /*On récupère le PDOStatement*/
         $stmt = PDOSingleton::get()->prepare($query);
 
@@ -505,8 +499,8 @@ class UnoptimizedHotelService extends AbstractHotelService {
 
         return $stmt;
     }
-
-
+  
+  
   /**
    * Construit une ShopEntity depuis un tableau associatif de données
    *
@@ -549,7 +543,6 @@ class UnoptimizedHotelService extends AbstractHotelService {
 
         // Charge les données meta de l'hôtel
         $hotel = new HotelEntity();
-        $hotel->setId($results['hotelID']);
         $hotel->setAddress( [
             'address_1' => $results['address_1'],
             'address_2' => $results['address_2'],
@@ -613,74 +606,16 @@ class UnoptimizedHotelService extends AbstractHotelService {
    * @return HotelEntity[] La liste des boutiques qui correspondent aux paramètres donnés à args
    */
   public function list ( array $args = [] ) : array {
-    $results = $this->buildQuery($args);
-
-
-      /*Bind des paramètres en fonction des clauses WHERE (donc des critères grâce à $args[])*/
-      if ( isset( $args['lat'] ) && isset( $args['lng'] ) && isset( $args['distance'] ) ) {
-          $results->bindParam('lat', $args['lat'] );
-          $results->bindParam('lat', $args['lng'] );
+    
+    $results = $this->convertEntityFromArray($args);
+    foreach ( $stmt->fetchAll( PDO::FETCH_ASSOC ) as $row ) {
+      try {
+        $results[] = $this->convertEntityFromArray( $row, $args );
+      } catch ( FilterException ) {
+        // Des FilterException peuvent être déclenchées pour exclure certains hotels des résultats
       }
-
-      if (isset($args['surface']['min']))
-          $results->bindParam('surfaceMin', $args['surface']['min'], PDO::PARAM_INT);
-
-      if (isset($args['surface']['max']))
-          $results->bindParam('surfaceMax', $args['surface']['max'], PDO::PARAM_INT);
-
-      if (isset($args['price']['min']))
-          $results->bindParam('priceMin', $args['price']['min'], PDO::PARAM_INT);
-
-      if (isset($args['price']['max']))
-          $results->bindParam('priceMax', $args['price']['max'], PDO::PARAM_INT);
-
-      if (isset($args['rooms']))
-          $results->bindParam('roomsBed', $args['rooms'], PDO::PARAM_INT);
-
-      if (isset($args['bathRooms']))
-          $results->bindParam('bathRooms', $args['bathRooms'], PDO::PARAM_INT);
-
-    $results->execute();
-
-    $results = $results->fetchAll( PDO::FETCH_ASSOC );
-    //dump($results);
-    $hotelEntities = [];
-
-    foreach ($results as $hotel){
-        //dump($hotel);
-        $newHotel = ( new HotelEntity() )
-            ->setId( $hotel['hotelID'] )
-            ->setName( $hotel['hotelName'] )
-            ->setAddress( [
-                'address_1' => $hotel['address_1'],
-                'address_2' => $hotel['address_2'],
-                'address_city' => $hotel['address_city'],
-                'address_zip' =>  $hotel['address_zip'],
-                'address_country' => $hotel['address_country'],
-            ] )
-            ->setGeoLat( $hotel['geo_lat'] )
-            ->setGeoLng( $hotel['geo_lng'] )
-            ->setImageUrl( $hotel['coverImage'] )
-            ->setPhone( $hotel['phone'] )
-
-            // Définit la note moyenne et le nombre d'avis de l'hôtel
-            ->setRating( $hotel['rating'] )
-            ->setRatingCount( $hotel['ratingCount'] )
-
-            // Charge la chambre la moins chère de l'hôtel
-            ->setCheapestRoom((new RoomEntity())
-                ->setId($hotel['author'])
-                ->setTitle($hotel['title'])
-                ->setPrice($hotel['price'])
-                ->setBathRoomsCount($hotel['bathrooms'])
-                ->setBedRoomsCount($hotel['bedrooms'])
-                ->setCoverImageUrl($hotel['coverImage'])
-                ->setSurface($hotel['surface'])
-                ->setType($hotel['types'])
-            );
-        $hotelEntities[] = $newHotel;
     }
-    //dump($hotelEntities);
-    return $hotelEntities;
+
+    return $results;
   }
 }
