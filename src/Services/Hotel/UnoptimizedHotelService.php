@@ -460,12 +460,12 @@ class UnoptimizedHotelService extends AbstractHotelService {
         //$whereClauses[] = "post.post_author = :hotelID AND post.post_type = 'room'";
         $whereClauses = [];
         if ( isset( $args['lat'] ) && isset( $args['lng'] ) && isset( $args['distance'] ) ) {
-            $whereClauses[] = '(111.111 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS( geo_lat ))
+            $whereClauses[] = '((111.111 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS( geo_lat ))
                               * COS(RADIANS( :lat ))
                               * COS(RADIANS( geo_lng - :lng ))
                               + SIN(RADIANS( geo_lat ))
                               * SIN(RADIANS( :lat )))))
-                < :distance';
+                < :distance)';
         }
 
         if (isset($args['surface']['min']))
@@ -619,7 +619,7 @@ class UnoptimizedHotelService extends AbstractHotelService {
       /*Bind des paramètres en fonction des clauses WHERE (donc des critères grâce à $args[])*/
       if ( isset( $args['lat'] ) && isset( $args['lng'] ) && isset( $args['distance'] ) ) {
           $results->bindParam('lat', $args['lat'] );
-          $results->bindParam('lat', $args['lng'] );
+          $results->bindParam('lng', $args['lng'] );
       }
 
       if (isset($args['surface']['min']))
