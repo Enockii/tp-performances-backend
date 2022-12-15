@@ -133,8 +133,8 @@ GROUP BY post.ID;
 
 |                              | **Avant** | **Après** |
 |------------------------------|-----------|-----------|
-| Nombre d'appels de `getDB()` | 601       | NOMBRE    |
-| Temps de chargement global   | 23.60s    | TEMPS     |
+| Nombre d'appels de `getDB()` | 601       | 1         |
+| Temps de chargement global   | 23.60s    | 7.64s     |
 
 **Requête SQL**
 
@@ -273,15 +273,15 @@ GROUP BY hotel.ID;
 
 ```
 
-## Question 7 : ajout d'indexes SQL
+## Question 7 : ajout d'index SQL
 
-**Indexes ajoutés**
+**Index ajoutés**
 
 - `TABLE` : `COLONNES`
 - `TABLE` : `COLONNES`
 - `TABLE` : `COLONNES`
 
-**Requête SQL d'ajout des indexes** 
+**Requête SQL d'ajout des index** 
 
 ```sql
 -- REQ SQL CREATION INDEXES

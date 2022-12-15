@@ -209,6 +209,58 @@ class OneRequestHotelService extends AbstractHotelService {
     }
 
 
+    /**
+     * Construit un HotelEntity depuis un tableau associatif de données
+     *
+     * @throws Exception
+     */
+    protected function convertEntityFromArray ( array $hotel ) : HotelEntity {
+
+        /* TIMER */
+        $timer = Timers::getInstance();
+        $timerId = $timer->startTimer('ConvertEntity');
+        /* /TIMER */
+
+        // set les données de l'hôtel
+        $newHotel = ( new HotelEntity() )
+            ->setId( $hotel['hotelID'] )
+            ->setName( $hotel['hotelName'] )
+            ->setAddress( [
+                'address_1' => $hotel['hotelAddress_1'],
+                'address_2' => $hotel['hotelAddress_2'],
+                'address_city' => $hotel['hotelAddress_city'],
+                'address_zip' =>  $hotel['hotelAddress_zip'],
+                'address_country' => $hotel['hotelAddress_country'],
+            ] )
+            ->setGeoLat( $hotel['hotelGeo_lat'] )
+            ->setGeoLng( $hotel['hotelGeo_lng'] )
+            ->setImageUrl( $hotel['hotelCoverImage'] )
+            ->setPhone( $hotel['hotelPhone'] )
+
+            // set la note moyenne et le nombre d'avis de l'hôtel
+            ->setRating( $hotel['hotelRating'] )
+            ->setRatingCount( $hotel['hotelRatingCount'] )
+
+            // Charge la chambre la moins chère de l'hôtel
+            ->setCheapestRoom( ( new RoomEntity() )
+                ->setId($hotel['cheapestRHotel'])
+                ->setTitle($hotel['cheapestRTitle'])
+                ->setPrice($hotel['cheapestRPrice'])
+                ->setBathRoomsCount($hotel['cheapestRBathrooms'])
+                ->setBedRoomsCount($hotel['cheapestRBedrooms'])
+                ->setCoverImageUrl($hotel['cheapestRCoverImage'])
+                ->setSurface($hotel['cheapestRSurface'])
+                ->setType($hotel['cheapestRTypes'])
+            );
+
+        /* TIMER */
+        $timer->endTimer('ConvertEntity', $timerId);
+        /* /TIMER*/
+
+        return $newHotel;
+    }
+
+
 
 
 
@@ -264,39 +316,7 @@ class OneRequestHotelService extends AbstractHotelService {
         $hotelEntities = [];
 
         foreach ($results as $hotel){
-
-            // set les données de l'hôtel
-            $newHotel = ( new HotelEntity() )
-                ->setId( $hotel['hotelID'] )
-                ->setName( $hotel['hotelName'] )
-                ->setAddress( [
-                    'address_1' => $hotel['hotelAddress_1'],
-                    'address_2' => $hotel['hotelAddress_2'],
-                    'address_city' => $hotel['hotelAddress_city'],
-                    'address_zip' =>  $hotel['hotelAddress_zip'],
-                    'address_country' => $hotel['hotelAddress_country'],
-                ] )
-                ->setGeoLat( $hotel['hotelGeo_lat'] )
-                ->setGeoLng( $hotel['hotelGeo_lng'] )
-                ->setImageUrl( $hotel['hotelCoverImage'] )
-                ->setPhone( $hotel['hotelPhone'] )
-
-                // set la note moyenne et le nombre d'avis de l'hôtel
-                ->setRating( $hotel['hotelRating'] )
-                ->setRatingCount( $hotel['hotelRatingCount'] )
-
-                // Charge la chambre la moins chère de l'hôtel
-                ->setCheapestRoom((new RoomEntity())
-                    ->setId($hotel['cheapestRHotel'])
-                    ->setTitle($hotel['cheapestRTitle'])
-                    ->setPrice($hotel['cheapestRPrice'])
-                    ->setBathRoomsCount($hotel['cheapestRBathrooms'])
-                    ->setBedRoomsCount($hotel['cheapestRBedrooms'])
-                    ->setCoverImageUrl($hotel['cheapestRCoverImage'])
-                    ->setSurface($hotel['cheapestRSurface'])
-                    ->setType($hotel['cheapestRTypes'])
-                );
-            $hotelEntities[] = $newHotel;
+            $hotelEntities[] = $this->convertEntityFromArray($hotel);
         }
 
         return $hotelEntities;
