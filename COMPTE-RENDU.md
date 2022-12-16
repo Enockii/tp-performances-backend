@@ -136,28 +136,28 @@ GROUP BY post.ID;
 
 ```SQL
     SELECT
-        hotel.ID                                AS hotelID,
-        hotel.display_name                      AS hotelName,
-        address1Data.meta_value                 AS hotelAddress_1,
-        address2Data.meta_value                 AS hotelAddress_2,
-        addressCityData.meta_value              AS hotelAddress_city,
-        addressZipData.meta_value               AS hotelAddress_zip,
-        addressCountryData.meta_value           AS hotelAddress_country,
-        CAST(geoLatData.meta_value AS float)    AS hotelGeo_lat,
-        CAST(geoLngData.meta_value AS float)    AS hotelGeo_lng,
-        phoneData.meta_value                    AS hotelPhone,
-        emailData.meta_value                    AS hotelEmail,
-        coverImageData.meta_value               AS hotelCoverImage,
-        review.rating                           AS hotelRating,
-        review.ratingCount                      AS hotelRatingCount,
-        hotelRoomData.author                    AS cheapestRHotel,
-        hotelRoomData.title                     AS cheapestRTitle,
-        hotelRoomData.price                     AS cheapestRPrice,
-        hotelRoomData.surface                   AS cheapestRSurface,
-        hotelRoomData.types                     AS cheapestRTypes,
-        hotelRoomData.bedrooms                  AS cheapestRBedrooms,
-        hotelRoomData.bathrooms                 AS cheapestRBathrooms,
-        hotelRoomData.coverImage                AS cheapestRCoverImage
+        hotel.ID                                       AS hotelID,
+        hotel.display_name                             AS hotelName,
+        address1Data.meta_value                        AS hotelAddress_1,
+        address2Data.meta_value                        AS hotelAddress_2,
+        addressCityData.meta_value                     AS hotelAddress_city,
+        addressZipData.meta_value                      AS hotelAddress_zip,
+        addressCountryData.meta_value                  AS hotelAddress_country,
+        CAST(geoLatData.meta_value AS float)           AS hotelGeo_lat,
+        CAST(geoLngData.meta_value AS float)           AS hotelGeo_lng,
+        phoneData.meta_value                           AS hotelPhone,
+        emailData.meta_value                           AS hotelEmail,
+        coverImageData.meta_value                      AS hotelCoverImage,
+        ROUND(AVG(CAST(rating.meta_value AS float))) AS hotelRating,
+        COUNT(rating.meta_value)                     AS hotelRatingCount,
+        hotelRoomData.author                           AS cheapestRHotel,
+        hotelRoomData.title                            AS cheapestRTitle,
+        hotelRoomData.price                            AS cheapestRPrice,
+        hotelRoomData.surface                          AS cheapestRSurface,
+        hotelRoomData.types                            AS cheapestRTypes,
+        hotelRoomData.bedrooms                         AS cheapestRBedrooms,
+        hotelRoomData.bathrooms                        AS cheapestRBathrooms,
+        hotelRoomData.coverImage                       AS cheapestRCoverImage
     
     FROM tp.wp_users AS hotel
     
@@ -224,24 +224,12 @@ GROUP BY post.ID;
                     ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
     
      ) AS hotelRoomData ON hotel.ID = hotelRoomData.author
-    
-    
-     INNER JOIN (
-        SELECT
-            post_author                                                   AS author,
-            ROUND(AVG(CAST(wp_postmeta.meta_value AS UNSIGNED INTEGER)))  AS rating,
-            COUNT(wp_postmeta.meta_value)                                 AS ratingCount
-    
-        FROM wp_usermeta, wp_posts, wp_postmeta
-    
-        WHERE wp_usermeta.user_id = wp_posts.post_author
-          AND wp_posts.ID = wp_postmeta.post_id
-          AND wp_postmeta.meta_key = 'rating'
-          AND wp_posts.post_type = 'review'
-    
-        GROUP BY wp_posts.post_author
-    
-     ) AS review ON hotel.ID = review.author
+
+
+     INNER JOIN tp.wp_posts AS post
+                ON hotel.ID = post.post_author AND post.post_type = 'review'
+     INNER JOIN tp.wp_postmeta AS rating
+                ON post.ID = rating.post_id AND rating.meta_key = 'rating'
     
     
     /*** Conditions de recherche demandées par l'utilisateur ***/
@@ -271,7 +259,7 @@ GROUP BY post.ID;
 
 - `wp_usermeta` : `user_id`
 - `wp_postmeta` : `post_id`
-- `wp_posts` : `ID`
+- `wp_posts` : `post_author`
 
 **Requête SQL d'ajout des index** 
 
@@ -286,8 +274,8 @@ ALTER TABLE `wp_posts` ADD INDEX(`post_author`);
 | `UnoptimizedService`  (avant)    | 22.43s (43s)  | 12.39s (23s)   |
 | `OneRequestService`   (avant)    | 7.58s  (24s)  | 3.71s (8s)     |
 | -------------------------------- | ------------- | -------------- |
-| `UnoptimizedService`  (après)    | (19.54s)      | (19.45s)       |
-| `OneRequestService`   (après)    | 2.07s (3.9s)  | 1.89s (3.5s)   |
+| `UnoptimizedService`  (après)    | (1.49s)       | (1.34s)        |
+| `OneRequestService`   (après)    | (3.27s)       | (2.63s)        |
 [Filtres à utiliser pour mesurer le temps de chargement](http://localhost/?types%5B%5D=Maison&types%5B%5D=Appartement&price%5Bmin%5D=200&price%5Bmax%5D=230&surface%5Bmin%5D=130&surface%5Bmax%5D=150&rooms=5&bathRooms=5&lat=46.988708&lng=3.160778&search=Nevers&distance=30)
 
 
