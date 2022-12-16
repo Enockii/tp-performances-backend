@@ -2,7 +2,7 @@ Vous pouvez utiliser ce [GSheets](https://docs.google.com/spreadsheets/d/13Hw27U
 
 ## Question 2 : Utilisation Server Timing API
 
-**Temps de chargement initial de la page** : TEMPS
+**Temps de chargement initial de la page** : 31.26s
 
 **Choix des méthodes à analyser** :
 
