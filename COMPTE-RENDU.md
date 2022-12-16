@@ -269,13 +269,13 @@ ALTER TABLE `wp_postmeta` ADD INDEX(`post_id`);
 ALTER TABLE `wp_posts` ADD INDEX(`post_author`);
 ```
 
-| Temps de chargement de la page   | Sans filtre   | Avec filtres   |
-|----------------------------------|---------------|----------------|
-| `UnoptimizedService`  (avant)    | 22.43s (43s)  | 12.39s (23s)   |
-| `OneRequestService`   (avant)    | 7.58s  (24s)  | 3.71s (8s)     |
-| -------------------------------- | ------------- | -------------- |
-| `UnoptimizedService`  (après)    | (1.49s)       | (1.34s)        |
-| `OneRequestService`   (après)    | (3.27s)       | (2.63s)        |
+| Temps de chargement de la page      | Sans filtre   | Avec filtres   |
+|-------------------------------------|---------------|----------------|
+| `UnoptimizedService`  (sans index)  | 22.43s        | 12.39s         |
+| `OneRequestService`   (sans index)  | 7.58s         | 3.71s          |
+| --------------------------------    | ------------- | -------------- |
+| `UnoptimizedService`  (après index) | 948ms         | 638ms          |
+| `OneRequestService`   (après index) | 1.91s         | 1.34s          |
 [Filtres à utiliser pour mesurer le temps de chargement](http://localhost/?types%5B%5D=Maison&types%5B%5D=Appartement&price%5Bmin%5D=200&price%5Bmax%5D=230&surface%5Bmin%5D=130&surface%5Bmax%5D=150&rooms=5&bathRooms=5&lat=46.988708&lng=3.160778&search=Nevers&distance=30)
 
 
