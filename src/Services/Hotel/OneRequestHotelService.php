@@ -2,7 +2,6 @@
 
 namespace App\Services\Hotel;
 
-use App\Common\FilterException;
 use App\Common\PDOSingleton;
 use App\Common\SingletonTrait;
 use App\Common\Timers;
@@ -31,9 +30,7 @@ class OneRequestHotelService extends AbstractHotelService {
         $timerId = $timer->startTimer('getDB');
         /* /TIMER */
 
-
         $pdo = PDOSingleton::get();
-
 
         /* TIMER */
         $timer->endTimer('getDB', $timerId);
