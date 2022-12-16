@@ -12,7 +12,7 @@ use App\Services\Hotel\UnoptimizedHotelService;
 
 require_once __DIR__ . "/vendor/autoload.php";
 
-Cache::get()->getItem('any_item'); // TODO à retirer après avoir testé !
+//Cache::get()->getItem('any_item'); // TODO à retirer après avoir testé !
 
 //$hotelService = UnoptimizedHotelService::getInstance();
 //$hotelService = OneRequestHotelService::getInstance();
