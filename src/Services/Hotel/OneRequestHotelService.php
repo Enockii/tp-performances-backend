@@ -51,28 +51,28 @@ class OneRequestHotelService extends AbstractHotelService {
 
         $query = "
               SELECT 
-                hotel.ID                                AS hotelID,
-                hotel.display_name                      AS hotelName,
-                address1Data.meta_value                 AS hotelAddress_1,
-                address2Data.meta_value                 AS hotelAddress_2,
-                addressCityData.meta_value              AS hotelAddress_city,
-                addressZipData.meta_value               AS hotelAddress_zip,
-                addressCountryData.meta_value           AS hotelAddress_country,
-                CAST(geoLatData.meta_value AS float)    AS hotelGeo_lat,
-                CAST(geoLngData.meta_value AS float)    AS hotelGeo_lng,
-                phoneData.meta_value                    AS hotelPhone,
-                emailData.meta_value                    AS hotelEmail,
-                coverImageData.meta_value               AS hotelCoverImage,
-                review.rating                           AS hotelRating,
-                review.ratingCount                      AS hotelRatingCount,
-                hotelRoomData.author                    AS cheapestRHotel,
-                hotelRoomData.title                     AS cheapestRTitle,
-                hotelRoomData.price                     AS cheapestRPrice,
-                hotelRoomData.surface                   AS cheapestRSurface,
-                hotelRoomData.types                     AS cheapestRTypes,
-                hotelRoomData.bedrooms                  AS cheapestRBedrooms,
-                hotelRoomData.bathrooms                 AS cheapestRBathrooms,
-                hotelRoomData.coverImage                AS cheapestRCoverImage
+                hotel.ID                                                 AS hotelID,
+                hotel.display_name                                       AS hotelName,
+                address1Data.meta_value                                  AS hotelAddress_1,
+                address2Data.meta_value                                  AS hotelAddress_2,
+                addressCityData.meta_value                               AS hotelAddress_city,
+                addressZipData.meta_value                                AS hotelAddress_zip,
+                addressCountryData.meta_value                            AS hotelAddress_country,
+                CAST(geoLatData.meta_value AS float)                     AS hotelGeo_lat,
+                CAST(geoLngData.meta_value AS float)                     AS hotelGeo_lng,
+                phoneData.meta_value                                     AS hotelPhone,
+                emailData.meta_value                                     AS hotelEmail,
+                coverImageData.meta_value                                AS hotelCoverImage,
+                ROUND(AVG(CAST(rating.meta_value AS UNSIGNED INTEGER)))  AS hotelRating, 
+                COUNT(rating.meta_value)                                 AS hotelRatingCount,
+                hotelRoomData.author                                     AS cheapestRHotel,
+                hotelRoomData.title                                      AS cheapestRTitle,
+                hotelRoomData.price                                      AS cheapestRPrice,
+                hotelRoomData.surface                                    AS cheapestRSurface,
+                hotelRoomData.types                                      AS cheapestRTypes,
+                hotelRoomData.bedrooms                                   AS cheapestRBedrooms,
+                hotelRoomData.bathrooms                                  AS cheapestRBathrooms,
+                hotelRoomData.coverImage                                 AS cheapestRCoverImage
             
               FROM tp.wp_users AS hotel
         
@@ -140,24 +140,10 @@ class OneRequestHotelService extends AbstractHotelService {
         
               ) AS hotelRoomData ON hotel.ID = hotelRoomData.author
         
-                  
-              INNER JOIN (
-                SELECT 
-                  post_author                                                   AS author,
-                  ROUND(AVG(CAST(wp_postmeta.meta_value AS UNSIGNED INTEGER)))  AS rating, 
-                  COUNT(wp_postmeta.meta_value)                                 AS ratingCount
-                
-                FROM wp_usermeta, wp_posts, wp_postmeta
-        
-                WHERE wp_usermeta.user_id = wp_posts.post_author 
-                  AND wp_posts.ID = wp_postmeta.post_id 
-                  AND wp_postmeta.meta_key = 'rating' 
-                  AND wp_posts.post_type = 'review'
-        
-                GROUP BY wp_posts.post_author
-        
-              ) AS review ON hotel.ID = review.author     
-        
+              INNER JOIN tp.wp_posts AS review
+                  ON review.post_author = hotel.ID AND review.post_type = 'review'
+              INNER JOIN tp.wp_postmeta AS rating
+                  ON rating.post_id = review.ID AND rating.meta_key = 'rating'
         ";
 
         /* Suite de la requête : conditions (WHERE), qui dépendent des critères de l'utilisateur, donnés par $args[] */
