@@ -7,6 +7,7 @@ use App\Common\SingletonTrait;
 use App\Common\Timers;
 use App\Entities\HotelEntity;
 use App\Entities\RoomEntity;
+use App\Services\Reviews\APIReviewsService;
 use App\Services\Room\RoomService;
 use Exception;
 use PDO;
@@ -17,7 +18,7 @@ class ReworkedHotelService extends OneRequestHotelService
     use SingletonTrait;
 
     protected function __construct () {
-        parent::__construct( new RoomService() );
+        parent::__construct();
     }
 
 
@@ -180,7 +181,31 @@ class ReworkedHotelService extends OneRequestHotelService
         return $newHotel;
     }
 
+    /**
+     * Construit un HotelEntity depuis un tableau associatif de données
+     *
+     * @throws Exception
+     */
+    protected function convertEntityAPI ( array $hotel ) : HotelEntity {
 
+        /* TIMER */
+        $timer = Timers::getInstance();
+        $timerId = $timer->startTimer('ConvertEntityAPI');
+        /* /TIMER */
+
+        /* Résultat API Client reviews */
+        $resultAPI = (new APIReviewsService)->get($hotel['hotelID'])['data'];
+
+        $newHotel = ReworkedHotelService::convertEntityFromArray($hotel)
+                        ->setRating( round($resultAPI['rating'] ))
+                        ->setRatingCount( $resultAPI['count'] );
+
+        /* TIMER */
+        $timer->endTimer('ConvertEntityAPI', $timerId);
+        /* /TIMER*/
+
+        return $newHotel;
+    }
 
 
 
@@ -236,7 +261,7 @@ class ReworkedHotelService extends OneRequestHotelService
         $hotelEntities = [];
 
         foreach ($results as $hotel){
-            $hotelEntities[] = $this->convertEntityFromArray($hotel);
+            $hotelEntities[] = $this->convertEntityAPI($hotel);
         }
 
         return $hotelEntities;
