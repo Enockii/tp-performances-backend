@@ -454,6 +454,14 @@ FROM wp_users AS hotel
      ON post.ID = rating.post_id AND rating.meta_key = 'rating';
 ```
 
+## Question 9 : API reviews
+
+**Temps de chargement de la page**
+
+| Sans API | Avec API |
+|----------|----------|
+| 210ms    | 10.80s   |
+
 
 ## Question 13 : Implémentation d'un cache Redis
 
