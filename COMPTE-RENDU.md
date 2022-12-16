@@ -295,17 +295,46 @@ ALTER TABLE `wp_posts` ADD INDEX(`post_author`);
 ### Table `hotels` (200 lignes)
 
 ```SQL
--- REQ SQL CREATION TABLE
+CREATE TABLE `hotels` (
+      `idHotel` INT(255) UNSIGNED NOT NULL AUTO_INCREMENT,
+      `name` VARCHAR(255) NOT NULL,
+      `mail` VARCHAR (255) NOT NULL,
+      `address_1` VARCHAR(255) NOT NULL,
+      `address_2` VARCHAR(255) NOT NULL,
+      `address_city` VARCHAR(100) NOT NULL,
+      `address_zip` VARCHAR(100) NOT NULL,
+      `address_country` VARCHAR(100) NOT NULL,
+      `phone` VARCHAR(50) NOT NULL,
+      `geo_lat` FLOAT UNSIGNED NOT NULL,
+      `geo_lng` FLOAT UNSIGNED NOT NULL,
+      `imageURL` LONGTEXT NOT NULL,
+      PRIMARY KEY (`idHotel`)
+) ENGINE=INNODB CHARSET=utf8mb4;
 ```
 
 ```SQL
--- REQ SQL INSERTION DONNÉES DANS LA TABLE
+
+
 ```
 
 ### Table `rooms` (1 200 lignes)
 
 ```SQL
--- REQ SQL CREATION TABLE
+CREATE TABLE `rooms` (
+     `idRoom` INT(255) UNSIGNED NOT NULL AUTO_INCREMENT,
+     `idHotel` INT(255) UNSIGNED NOT NULL,
+     `title` VARCHAR(255) NOT NULL,
+     `price` DECIMAL(5,2) NOT NULL,
+     `coverImageUrl` LONGTEXT NOT NULL,
+     `bedRoomsCount` INT UNSIGNED NOT NULL,
+     `bathRoomsCount` INT UNSIGNED NOT NULL,
+     `surface` INT UNSIGNED NOT NULL,
+     `type` VARCHAR(255) NOT NULL,
+     PRIMARY KEY (`idRoom`),
+     FOREIGN KEY (`idHotel`) REFERENCES hotels(`idHotel`),
+     INDEX idH_index (`idHotel`)
+) ENGINE=INNODB CHARSET=utf8mb4;
+
 ```
 
 ```SQL
@@ -315,7 +344,14 @@ ALTER TABLE `wp_posts` ADD INDEX(`post_author`);
 ### Table `reviews` (19 700 lignes)
 
 ```SQL
--- REQ SQL CREATION TABLE
+CREATE TABLE `review` (
+      `idReview` INT(255) UNSIGNED NOT NULL AUTO_INCREMENT,
+      `idHotel` INT(255) UNSIGNED NOT NULL,
+      `review` INT UNSIGNED NOT NULL,
+      PRIMARY KEY (`idReview`),
+      FOREIGN KEY (`idHotel`) REFERENCES hotels(`idHotel`),
+      INDEX idH_index (`idHotel`)
+) ENGINE=INNODB CHARSET=utf8mb4;
 ```
 
 ```SQL

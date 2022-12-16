@@ -675,3 +675,168 @@ SELECT
 
 http://localhost/?types%5B%5D=Maison&types%5B%5D=Appartement&price%5Bmin%5D=200&price%5Bmax%5D=230&surface%5Bmin%5D=130&surface%5Bmax%5D=150&rooms=5&bathRooms=5&lat=46.988708&lng=3.160778&search=Nevers&distance=30
 http://localhost/?types%5B%5D=Maison&types%5B%5D=Appartement&price%5Bmin%5D=200&price%5Bmax%5D=230&surface%5Bmin%5D=130&surface%5Bmax%5D=150&rooms=5&bathRooms=5&lat=&lng=&search=Nevers&distance=30
+
+
+/*********************************** Question 8 **********************************/
+CREATE TABLE hotels (
+       id INT PRIMARY KEY NOT NULL,
+       name VARCHAR,
+       INDEX id_index (id),
+       FOREIGN KEY (parent_id)
+           REFERENCES parent(id)
+           ON DELETE CASCADE
+) ENGINE=INNODB;
+
+CREATE TABLE `hotels` (
+                          `idHotel` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                          `name` VARCHAR(255) NOT NULL,
+                          `mail` VARCHAR (255) NOT NULL,
+                          `address_1` VARCHAR(255) NOT NULL,
+                          `address_2` VARCHAR(255) NOT NULL,
+                          `address_city` VARCHAR(100) NOT NULL,
+                          `address_zip` VARCHAR(100) NOT NULL,
+                          `address_country` VARCHAR(100) NOT NULL,
+                          `phone` VARCHAR(50) NOT NULL,
+                          `geo_lat` FLOAT UNSIGNED NOT NULL,
+                          `geo_lng` FLOAT UNSIGNED NOT NULL,
+                          `imageURL` LONGTEXT NOT NULL,
+                          PRIMARY KEY (`idHotel`),
+                          INDEX id_index (`idHotel`)
+) ENGINE=INNODB CHARSET=utf8mb4;
+
+
+INSERT INTO `hotels` (
+          SELECT
+              hotel.ID                                       AS idHotel,
+              hotel.display_name                             AS name,
+              address1Data.meta_value                        AS address_1,
+              address2Data.meta_value                        AS address_1,
+              addressCityData.meta_value                     AS address_city,
+              addressZipData.meta_value                      AS address_zip,
+              addressCountryData.meta_value                  AS address_country,
+              CAST(geoLatData.meta_value AS float)           AS geo_lat,
+              CAST(geoLngData.meta_value AS float)           AS geo_lng,
+              phoneData.meta_value                           AS phone,
+              emailData.meta_value                           AS mail,
+              coverImageData.meta_value                      AS imageURL,
+
+          FROM tp.wp_users AS hotel
+
+               INNER JOIN tp.wp_usermeta AS address1Data
+                          ON hotel.ID = address1Data.user_id AND address1Data.meta_key = 'address_1'
+
+               INNER JOIN tp.wp_usermeta AS address2Data
+                          ON hotel.ID = address2Data.user_id AND address2Data.meta_key = 'address_2'
+
+               INNER JOIN tp.wp_usermeta AS addressCityData
+                          ON hotel.ID = addressCityData.user_id AND addressCityData.meta_key = 'address_city'
+
+               INNER JOIN tp.wp_usermeta AS addressZipData
+                          ON hotel.ID = addressZipData.user_id AND addressZipData.meta_key = 'address_zip'
+
+               INNER JOIN tp.wp_usermeta AS addressCountryData
+                          ON hotel.ID = addressCountryData.user_id AND addressCountryData.meta_key = 'address_country'
+
+               INNER JOIN tp.wp_usermeta AS geoLatData
+                          ON hotel.ID = geoLatData.user_id AND geoLatData.meta_key = 'geo_lat'
+
+               INNER JOIN tp.wp_usermeta AS geoLngData
+                          ON hotel.ID = geoLngData.user_id AND geoLngData.meta_key = 'geo_lng'
+
+               INNER JOIN tp.wp_usermeta AS coverImageData
+                          ON hotel.ID = coverImageData.user_id AND coverImageData.meta_key = 'coverImage'
+
+               INNER JOIN tp.wp_usermeta AS phoneData
+                          ON hotel.ID = phoneData.user_id AND phoneData.meta_key = 'phone'
+
+               INNER JOIN tp.wp_usermeta AS emailData
+                          ON hotel.ID = emailData.user_id AND emailData.meta_key = 'email'
+
+          GROUP BY hotel.ID
+
+);
+
+
+
+
+CREATE TABLE `rooms` (
+                         `idRoom` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                         `idHotel` INT UNSIGNED NOT NULL,
+                         `title` VARCHAR(255) NOT NULL,
+                         `price` DECIMAL(5,2) NOT NULL,
+                         `coverImageUrl` LONGTEXT NOT NULL,
+                         `bedRoomsCount` INT UNSIGNED NOT NULL,
+                         `bathRoomsCount` INT UNSIGNED NOT NULL,
+                         `surface` INT UNSIGNED NOT NULL,
+                         `type` VARCHAR(255) NOT NULL,
+                         PRIMARY KEY (`idRoom`),
+                         FOREIGN KEY (`idHotel`) REFERENCES hotels(`idHotel`),
+                         INDEX idH_index (`idHotel`)
+) ENGINE=INNODB CHARSET=utf8mb4;
+
+INSERT INTO (
+    SELECT
+        post.ID                                      AS idRoom,
+        post.post_author                             AS idHotel,
+        post.post_title                              AS title,
+        CAST(PriceData.meta_value AS DECIMAL(5,2))   AS price,
+        CAST(SurfaceData.meta_value AS int)          AS surface,
+        TypeData.meta_value                          AS type,
+        CAST(BedroomsCountData.meta_value AS int)    AS bedRoomsCount,
+        CAST(BathroomsCountData.meta_value AS int)   AS bathRoomsCount,
+        CoverImageData.meta_value                    AS coverImageUrl
+
+    FROM tp.wp_posts AS post
+
+             INNER JOIN tp.wp_postmeta AS SurfaceData
+                        ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+
+             INNER JOIN tp.wp_postmeta AS PriceData
+                        ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+
+             INNER JOIN tp.wp_postmeta AS TypeData
+                        ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+
+             INNER JOIN tp.wp_postmeta AS BedroomsCountData
+                        ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+
+             INNER JOIN tp.wp_postmeta AS BathroomsCountData
+                        ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+
+             INNER JOIN tp.wp_postmeta AS CoverImageData
+                        ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+
+    WHERE post.post_type = 'room'
+
+    GROUP BY post.ID
+
+);
+
+
+
+
+
+
+
+
+CREATE TABLE `review` (
+          `idReview` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+          `idHotel` INT UNSIGNED NOT NULL,
+          `review` INT UNSIGNED NOT NULL,
+          PRIMARY KEY (`idReview`),
+          FOREIGN KEY (`idHotel`) REFERENCES hotels(`idHotel`),
+          INDEX idH_index (`idHotel`)
+) ENGINE=INNODB CHARSET=utf8mb4;
+
+INSERT INTO (
+    SELECT
+        hotel.ID AS idHotel
+        ROUND(AVG(CAST(rating.meta_value AS float))) AS hotelRating,
+    FROM wp_users AS hotel
+    INNER JOIN tp.wp_posts AS post
+            ON hotel.ID = post.post_author AND post.post_type = 'review'
+    INNER JOIN tp.wp_postmeta AS rating
+            ON post.ID = rating.post_id AND rating.meta_key = 'rating'
+
+
+)
