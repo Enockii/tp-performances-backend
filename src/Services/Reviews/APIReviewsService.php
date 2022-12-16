@@ -2,11 +2,6 @@
 
 namespace App\Services\Reviews;
 
-use App\Common\Timers;
-use App\Entities\HotelEntity;
-use App\Entities\RoomEntity;
-use Exception;
-
 class APIReviewsService
 {
     private string $api_url = "http://cheap-trusted-reviews.fake/?hotel_id=";
