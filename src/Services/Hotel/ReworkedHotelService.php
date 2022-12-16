@@ -8,10 +8,11 @@ use App\Common\Timers;
 use App\Entities\HotelEntity;
 use App\Entities\RoomEntity;
 use App\Services\Reviews\APIReviewsService;
-use App\Services\Room\RoomService;
+use App\Services\Reviews\CachedApiReviewsService;
 use Exception;
 use PDO;
 use PDOStatement;
+use Psr\Cache\InvalidArgumentException;
 
 class ReworkedHotelService extends OneRequestHotelService
 {
@@ -185,6 +186,7 @@ class ReworkedHotelService extends OneRequestHotelService
      * Construit un HotelEntity depuis un tableau associatif de données
      *
      * @throws Exception
+     * @throws InvalidArgumentException
      */
     protected function convertEntityAPI ( array $hotel ) : HotelEntity {
 
@@ -195,6 +197,7 @@ class ReworkedHotelService extends OneRequestHotelService
 
         /* Résultat API Client reviews */
         $resultAPI = (new APIReviewsService)->get($hotel['hotelID'])['data'];
+        //$resultAPI = (new CachedApiReviewsService())->get($hotel['hotelID']);
 
         $newHotel = ReworkedHotelService::convertEntityFromArray($hotel)
                         ->setRating( round($resultAPI['rating'] ))

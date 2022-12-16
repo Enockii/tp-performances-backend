@@ -12,7 +12,6 @@ class Cache {
     private function __construct() {
         $redisConnection = RedisAdapter::createConnection('redis://redis');
         $this->cache = new RedisAdapter($redisConnection, "App\Services\Hotel", 0);
-
     }
 
     public static function get() : AdapterInterface {
