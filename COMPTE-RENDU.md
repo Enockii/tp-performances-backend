@@ -88,27 +88,22 @@ SELECT post.ID,
 FROM tp.wp_posts AS post
 
       INNER JOIN tp.wp_postmeta AS SurfaceData
-                 ON post.ID = SurfaceData.post_id
-                  AND SurfaceData.meta_key = 'surface'
+          ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
 
       INNER JOIN tp.wp_postmeta AS PriceData
-                 ON post.ID = PriceData.post_id
-                  AND PriceData.meta_key = 'price'
+          ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
 
       INNER JOIN tp.wp_postmeta AS TypeData
-                 ON post.ID = TypeData.post_id
-                  AND TypeData.meta_key = 'type'
+          ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
 
       INNER JOIN tp.wp_postmeta AS BedroomsCountData
-                 ON post.ID = BedroomsCountData.post_id
-                  AND BedroomsCountData.meta_key = 'bedrooms_count'
+          ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
 
       INNER JOIN tp.wp_postmeta AS BathroomsCountData
-                 ON post.ID = BathroomsCountData.post_id
-                  AND BathroomsCountData.meta_key = 'bathrooms_count'
+          ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
 
       INNER JOIN tp.wp_postmeta AS CoverImageData
-                 ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+          ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
 
 WHERE post.post_author = :hotelID AND post.post_type = 'room'
   AND SurfaceData.meta_value >= :surfaceMin
@@ -117,7 +112,8 @@ WHERE post.post_author = :hotelID AND post.post_type = 'room'
   AND PriceData.meta_value <= :priceMax
   AND BedroomsCountData.meta_value >= :roomsBed
   AND BathroomsCountData.meta_value >= :bathRooms
-  AND TypeData.meta_value IN('Maison', 'Appartement')
+  AND TypeData.meta_value IN('Type1', 'Type2')
+
 GROUP BY post.ID;
 ```
 
@@ -139,125 +135,133 @@ GROUP BY post.ID;
 **Requête SQL**
 
 ```SQL
-SELECT
-    hotel.ID                                                 AS hotelID,
-    hotel.display_name                                       AS hotelName,
-    address1Data.meta_value                                  AS hotelAddress_1,
-    address2Data.meta_value                                  AS hotelAddress_2,
-    addressCityData.meta_value                               AS hotelAddress_city,
-    addressZipData.meta_value                                AS hotelAddress_zip,
-    addressCountryData.meta_value                            AS hotelAddress_country,
-    CAST(geoLatData.meta_value AS float)                     AS hotelGeo_lat,
-    CAST(geoLngData.meta_value AS float)                     AS hotelGeo_lng,
-    phoneData.meta_value                                     AS hotelPhone,
-    emailData.meta_value                                     AS hotelEmail,
-    coverImageData.meta_value                                AS hotelCoverImage,
-    ROUND(AVG(CAST(rating.meta_value AS UNSIGNED INTEGER)))  AS hotelRating,
-    COUNT(rating.meta_value)                                 AS hotelRatingCount,
-    hotelRoomData.author                                     AS cheapestRHotel,
-    hotelRoomData.title                                      AS cheapestRTitle,
-    hotelRoomData.price                                      AS cheapestRPrice,
-    hotelRoomData.surface                                    AS cheapestRSurface,
-    hotelRoomData.types                                      AS cheapestRTypes,
-    hotelRoomData.bedrooms                                   AS cheapestRBedrooms,
-    hotelRoomData.bathrooms                                  AS cheapestRBathrooms,
-    hotelRoomData.coverImage                                 AS cheapestRCoverImage
-
-FROM tp.wp_users AS hotel
-
-    
-/*** Données de l'hotel ***/
- INNER JOIN tp.wp_usermeta AS address1Data
-            ON hotel.ID = address1Data.user_id AND address1Data.meta_key = 'address_1'
-
- INNER JOIN tp.wp_usermeta AS address2Data
-            ON hotel.ID = address2Data.user_id AND address2Data.meta_key = 'address_2'
-
- INNER JOIN tp.wp_usermeta AS addressCityData
-            ON hotel.ID = addressCityData.user_id AND addressCityData.meta_key = 'address_city'
-
- INNER JOIN tp.wp_usermeta AS addressZipData
-            ON hotel.ID = addressZipData.user_id AND addressZipData.meta_key = 'address_zip'
-
- INNER JOIN tp.wp_usermeta AS addressCountryData
-            ON hotel.ID = addressCountryData.user_id AND addressCountryData.meta_key = 'address_country'
-
- INNER JOIN tp.wp_usermeta AS geoLatData
-            ON hotel.ID = geoLatData.user_id AND geoLatData.meta_key = 'geo_lat'
-
- INNER JOIN tp.wp_usermeta AS geoLngData
-            ON hotel.ID = geoLngData.user_id AND geoLngData.meta_key = 'geo_lng'
-
- INNER JOIN tp.wp_usermeta AS coverImageData
-            ON hotel.ID = coverImageData.user_id AND coverImageData.meta_key = 'coverImage'
-
- INNER JOIN tp.wp_usermeta AS phoneData
-            ON hotel.ID = phoneData.user_id AND phoneData.meta_key = 'phone'
-
- INNER JOIN tp.wp_usermeta AS emailData
-            ON hotel.ID = emailData.user_id AND emailData.meta_key = 'email'
-
-     
-/*** Données de la chambre la moins chere de l'hôtel ***/
- INNER JOIN (
     SELECT
-        post.post_author                             AS author,
-        post.post_title                              AS title,
-        CAST(PriceData.meta_value AS float)          AS price,
-        CAST(SurfaceData.meta_value AS int)          AS surface,
-        TypeData.meta_value                          AS types,
-        CAST(BedroomsCountData.meta_value AS int)    AS bedrooms,
-        CAST(BathroomsCountData.meta_value AS int)   AS bathrooms,
-        CoverImageData.meta_value                    AS coverImage
-
-    FROM tp.wp_posts AS post
-
-    INNER JOIN tp.wp_postmeta AS SurfaceData
-            ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+        hotel.ID                                AS hotelID,
+        hotel.display_name                      AS hotelName,
+        address1Data.meta_value                 AS hotelAddress_1,
+        address2Data.meta_value                 AS hotelAddress_2,
+        addressCityData.meta_value              AS hotelAddress_city,
+        addressZipData.meta_value               AS hotelAddress_zip,
+        addressCountryData.meta_value           AS hotelAddress_country,
+        CAST(geoLatData.meta_value AS float)    AS hotelGeo_lat,
+        CAST(geoLngData.meta_value AS float)    AS hotelGeo_lng,
+        phoneData.meta_value                    AS hotelPhone,
+        emailData.meta_value                    AS hotelEmail,
+        coverImageData.meta_value               AS hotelCoverImage,
+        review.rating                           AS hotelRating,
+        review.ratingCount                      AS hotelRatingCount,
+        hotelRoomData.author                    AS cheapestRHotel,
+        hotelRoomData.title                     AS cheapestRTitle,
+        hotelRoomData.price                     AS cheapestRPrice,
+        hotelRoomData.surface                   AS cheapestRSurface,
+        hotelRoomData.types                     AS cheapestRTypes,
+        hotelRoomData.bedrooms                  AS cheapestRBedrooms,
+        hotelRoomData.bathrooms                 AS cheapestRBathrooms,
+        hotelRoomData.coverImage                AS cheapestRCoverImage
     
-    INNER JOIN tp.wp_postmeta AS PriceData
-            ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+    FROM tp.wp_users AS hotel
     
-    INNER JOIN tp.wp_postmeta AS TypeData
-            ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+     INNER JOIN tp.wp_usermeta AS address1Data
+                ON hotel.ID = address1Data.user_id AND address1Data.meta_key = 'address_1'
     
-    INNER JOIN tp.wp_postmeta AS BedroomsCountData
-            ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+     INNER JOIN tp.wp_usermeta AS address2Data
+                ON hotel.ID = address2Data.user_id AND address2Data.meta_key = 'address_2'
     
-    INNER JOIN tp.wp_postmeta AS BathroomsCountData
-            ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+     INNER JOIN tp.wp_usermeta AS addressCityData
+                ON hotel.ID = addressCityData.user_id AND addressCityData.meta_key = 'address_city'
     
-    INNER JOIN tp.wp_postmeta AS CoverImageData
-            ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
-
- ) AS hotelRoomData ON hotel.ID = hotelRoomData.author
-
-
-/*** Avis sur l'hôtel ***/
- INNER JOIN tp.wp_posts AS review
-            ON review.post_author = hotel.ID AND review.post_type = 'review'
- INNER JOIN tp.wp_postmeta AS rating
-            ON rating.post_id = review.ID AND rating.meta_key = 'rating'
-
-
-/*** Conditions de recherche demandées par l'utilisateur ***/
-WHERE 
-  (111.111 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS( CAST(geoLatData.meta_value AS float)))
-      * COS(RADIANS( :lat ))
-      * COS(RADIANS( CAST(geoLngData.meta_value AS float) - :lng ))
-      + SIN(RADIANS( CAST(geoLatData.meta_value AS float)))
-      * SIN(RADIANS( :lat )))))
-  ) <= :distance 
-  AND surface >= :surfaceMin 
-  AND surface <= :surfaceMax 
-  AND price >= :priceMin 
-  AND price <= :priceMax 
-  AND bedrooms >= :roomsBed 
-  AND bathrooms >= :bathRooms 
-  AND types IN('type1', 'type2') 
-
-
-GROUP BY hotel.ID; 
+     INNER JOIN tp.wp_usermeta AS addressZipData
+                ON hotel.ID = addressZipData.user_id AND addressZipData.meta_key = 'address_zip'
+    
+     INNER JOIN tp.wp_usermeta AS addressCountryData
+                ON hotel.ID = addressCountryData.user_id AND addressCountryData.meta_key = 'address_country'
+    
+     INNER JOIN tp.wp_usermeta AS geoLatData
+                ON hotel.ID = geoLatData.user_id AND geoLatData.meta_key = 'geo_lat'
+    
+     INNER JOIN tp.wp_usermeta AS geoLngData
+                ON hotel.ID = geoLngData.user_id AND geoLngData.meta_key = 'geo_lng'
+    
+     INNER JOIN tp.wp_usermeta AS coverImageData
+                ON hotel.ID = coverImageData.user_id AND coverImageData.meta_key = 'coverImage'
+    
+     INNER JOIN tp.wp_usermeta AS phoneData
+                ON hotel.ID = phoneData.user_id AND phoneData.meta_key = 'phone'
+    
+     INNER JOIN tp.wp_usermeta AS emailData
+                ON hotel.ID = emailData.user_id AND emailData.meta_key = 'email'
+    
+    
+     INNER JOIN (
+        SELECT
+            post.post_author                             AS author,
+            post.post_title                              AS title,
+            CAST(PriceData.meta_value AS float)          AS price,
+            CAST(SurfaceData.meta_value AS int)          AS surface,
+            TypeData.meta_value                          AS types,
+            CAST(BedroomsCountData.meta_value AS int)    AS bedrooms,
+            CAST(BathroomsCountData.meta_value AS int)   AS bathrooms,
+            CoverImageData.meta_value                    AS coverImage
+    
+        FROM tp.wp_posts AS post
+    
+         INNER JOIN tp.wp_postmeta AS SurfaceData
+                    ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+    
+         INNER JOIN tp.wp_postmeta AS PriceData
+                    ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+    
+         INNER JOIN tp.wp_postmeta AS TypeData
+                    ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+    
+         INNER JOIN tp.wp_postmeta AS BedroomsCountData
+                    ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+    
+         INNER JOIN tp.wp_postmeta AS BathroomsCountData
+                    ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+    
+         INNER JOIN tp.wp_postmeta AS CoverImageData
+                    ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+    
+     ) AS hotelRoomData ON hotel.ID = hotelRoomData.author
+    
+    
+     INNER JOIN (
+        SELECT
+            post_author                                                   AS author,
+            ROUND(AVG(CAST(wp_postmeta.meta_value AS UNSIGNED INTEGER)))  AS rating,
+            COUNT(wp_postmeta.meta_value)                                 AS ratingCount
+    
+        FROM wp_usermeta, wp_posts, wp_postmeta
+    
+        WHERE wp_usermeta.user_id = wp_posts.post_author
+          AND wp_posts.ID = wp_postmeta.post_id
+          AND wp_postmeta.meta_key = 'rating'
+          AND wp_posts.post_type = 'review'
+    
+        GROUP BY wp_posts.post_author
+    
+     ) AS review ON hotel.ID = review.author
+    
+    
+    /*** Conditions de recherche demandées par l'utilisateur ***/
+    WHERE 
+      (111.111 * DEGREES(ACOS(LEAST(1.0, COS(RADIANS( CAST(geoLatData.meta_value AS float)))
+          * COS(RADIANS( :lat ))
+          * COS(RADIANS( CAST(geoLngData.meta_value AS float) - :lng ))
+          + SIN(RADIANS( CAST(geoLatData.meta_value AS float)))
+          * SIN(RADIANS( :lat )))))
+      ) <= :distance 
+      AND surface >= :surfaceMin 
+      AND surface <= :surfaceMax 
+      AND price >= :priceMin 
+      AND price <= :priceMax 
+      AND bedrooms >= :roomsBed 
+      AND bathrooms >= :bathRooms 
+      AND types IN('type1', 'type2') 
+    
+    
+    GROUP BY hotel.ID; 
 
 ```
 
@@ -279,11 +283,11 @@ ALTER TABLE `wp_posts` ADD INDEX(`post_author`);
 
 | Temps de chargement de la page   | Sans filtre   | Avec filtres   |
 |----------------------------------|---------------|----------------|
-| `UnoptimizedService`  (avant)    | 22.43s        | 12.39s         |
-| `UnoptimizedService`  (après)    | 657ms         | 620ms          |
+| `UnoptimizedService`  (avant)    | 22.43s (43s)  | 12.39s (23s)   |
+| `OneRequestService`   (avant)    | 7.58s  (24s)  | 3.71s (8s)     |
 | -------------------------------- | ------------- | -------------- |
-| `OneRequestService`   (avant)    | 7.58s         | 3.71s          |
-| `OneRequestService`   (après)    | 2.07s         | 1.89s          |
+| `UnoptimizedService`  (après)    | (19.54s)      | (19.45s)       |
+| `OneRequestService`   (après)    | 2.07s (3.9s)  | 1.89s (3.5s)   |
 [Filtres à utiliser pour mesurer le temps de chargement](http://localhost/?types%5B%5D=Maison&types%5B%5D=Appartement&price%5Bmin%5D=200&price%5Bmax%5D=230&surface%5Bmin%5D=130&surface%5Bmax%5D=150&rooms=5&bathRooms=5&lat=46.988708&lng=3.160778&search=Nevers&distance=30)
 
 
