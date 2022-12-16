@@ -287,8 +287,8 @@ ALTER TABLE `wp_posts` ADD INDEX(`post_author`);
 
 | Temps de chargement de la page | Sans filtre | Avec filtres |
 |--------------------------------|-------------|--------------|
-| `OneRequestService`            | TEMPS       | TEMPS        |
-| `ReworkedHotelService`         | TEMPS       | TEMPS        |
+| `OneRequestService`            | 1.80s       | 1.29s        |
+| `ReworkedHotelService`         | 210ms       | 88ms         |
 
 [Filtres à utiliser pour mesurer le temps de chargement](http://localhost/?types%5B%5D=Maison&types%5B%5D=Appartement&price%5Bmin%5D=200&price%5Bmax%5D=230&surface%5Bmin%5D=130&surface%5Bmax%5D=150&rooms=5&bathRooms=5&lat=46.988708&lng=3.160778&search=Nevers&distance=30)
 
@@ -389,39 +389,39 @@ CREATE TABLE `rooms` (
 ```
 
 ```SQL
-INSERT INTO tp.rooms (
-    SELECT
-        post.ID                                      AS idRoom,
-        post.post_author                             AS idHotel,
-        post.post_title                              AS title,
-        CAST(PriceData.meta_value AS DECIMAL(5,2))   AS price,
-        CoverImageData.meta_value                    AS coverImageUrl,
-        CAST(BedroomsCountData.meta_value AS int)    AS bedRoomsCount,
-        CAST(BathroomsCountData.meta_value AS int)   AS bathRoomsCount,
-        CAST(SurfaceData.meta_value AS int)          AS surface,
-        TypeData.meta_value                          AS type
+INSERT INTO tp.rooms 
+    (idHotel, title, price, coverImageUrl, bedRoomsCount, bathRoomsCount, surface, type)
+SELECT
+    post.post_author                             AS idHotel,
+    post.post_title                              AS title,
+    CAST(PriceData.meta_value AS DECIMAL(5,2))   AS price,
+    CoverImageData.meta_value                    AS coverImageUrl,
+    CAST(BedroomsCountData.meta_value AS int)    AS bedRoomsCount,
+    CAST(BathroomsCountData.meta_value AS int)   AS bathRoomsCount,
+    CAST(SurfaceData.meta_value AS int)          AS surface,
+    TypeData.meta_value                          AS type
 
-    FROM tp.wp_posts AS post
+FROM tp.wp_posts AS post
 
-             INNER JOIN tp.wp_postmeta AS SurfaceData
-                        ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+ INNER JOIN tp.wp_postmeta AS SurfaceData
+     ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
 
-             INNER JOIN tp.wp_postmeta AS PriceData
-                        ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+ INNER JOIN tp.wp_postmeta AS PriceData
+     ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
 
-             INNER JOIN tp.wp_postmeta AS TypeData
-                        ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+ INNER JOIN tp.wp_postmeta AS TypeData
+     ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
 
-             INNER JOIN tp.wp_postmeta AS BedroomsCountData
-                        ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+ INNER JOIN tp.wp_postmeta AS BedroomsCountData
+     ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
 
-             INNER JOIN tp.wp_postmeta AS BathroomsCountData
-                        ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+ INNER JOIN tp.wp_postmeta AS BathroomsCountData
+     ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
 
-             INNER JOIN tp.wp_postmeta AS CoverImageData
-                        ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+ INNER JOIN tp.wp_postmeta AS CoverImageData
+     ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
 
-    WHERE post.post_type = 'room'
+WHERE post.post_type = 'room'
 
     GROUP BY post.ID
 );
@@ -448,10 +448,10 @@ SELECT
     hotel.ID AS idHotel,
     rating.meta_value AS review
 FROM wp_users AS hotel
-    INNER JOIN tp.wp_posts AS post
-        ON hotel.ID = post.post_author AND post.post_type = 'review'
-    INNER JOIN tp.wp_postmeta AS rating
-        ON post.ID = rating.post_id AND rating.meta_key = 'rating';
+ INNER JOIN tp.wp_posts AS post
+     ON hotel.ID = post.post_author AND post.post_type = 'review'
+ INNER JOIN tp.wp_postmeta AS rating
+     ON post.ID = rating.post_id AND rating.meta_key = 'rating';
 ```
 
 

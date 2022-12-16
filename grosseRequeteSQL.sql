@@ -774,9 +774,8 @@ CREATE TABLE tp.rooms (
                          INDEX idH_index (`idHotel`)
 ) ENGINE=INNODB CHARSET=utf8mb4;
 
-INSERT INTO tp.rooms (
+INSERT INTO tp.rooms (idHotel, title, price, coverImageUrl, bedRoomsCount, bathRoomsCount, surface, type)
     SELECT
-        post.ID                                      AS idRoom,
         post.post_author                             AS idHotel,
         post.post_title                              AS title,
         CAST(PriceData.meta_value AS DECIMAL(5,2))   AS price,
@@ -809,17 +808,11 @@ INSERT INTO tp.rooms (
     WHERE post.post_type = 'room'
 
     GROUP BY post.ID
-
-);
-
+;
 
 
 
-
-
-
-
-CREATE TABLE tp.review (
+CREATE TABLE tp.reviews (
           `idReview` INT UNSIGNED NOT NULL AUTO_INCREMENT,
           `idHotel` INT UNSIGNED NOT NULL,
           `review` INT UNSIGNED NOT NULL,
@@ -828,7 +821,7 @@ CREATE TABLE tp.review (
           INDEX idH_index (`idHotel`)
 ) ENGINE=INNODB CHARSET=utf8mb4;
 
-INSERT INTO tp.review (idHotel, review)
+INSERT INTO tp.reviews (idHotel, review)
     SELECT hotel.ID AS idHotel,
     rating.meta_value AS review
      FROM wp_users AS hotel

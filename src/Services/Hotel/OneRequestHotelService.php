@@ -220,6 +220,7 @@ class OneRequestHotelService extends AbstractHotelService {
             ->setGeoLng( $hotel['hotelGeo_lng'] )
             ->setImageUrl( $hotel['hotelCoverImage'] )
             ->setPhone( $hotel['hotelPhone'] )
+            ->setMail( $hotel['hotelEmail'])
 
             // set la note moyenne et le nombre d'avis de l'hôtel
             ->setRating( $hotel['hotelRating'] )
