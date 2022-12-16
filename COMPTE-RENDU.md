@@ -267,7 +267,7 @@ GROUP BY hotel.ID;
 
 - `wp_usermeta` : `user_id`
 - `wp_postmeta` : `post_id`
-- `wp_posts` : `post_author`
+- `wp_posts` : `ID`
 
 **Requête SQL d'ajout des index** 
 
