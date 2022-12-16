@@ -314,6 +314,57 @@ CREATE TABLE `hotels` (
 
 ```SQL
 
+INSERT INTO tp.hotels (
+          SELECT
+              hotel.ID                                       AS idHotel,
+              hotel.display_name                             AS name,
+              emailData.meta_value                           AS mail,
+              address1Data.meta_value                        AS address_1,
+              address2Data.meta_value                        AS address_2,
+              addressCityData.meta_value                     AS address_city,
+              addressZipData.meta_value                      AS address_zip,
+              addressCountryData.meta_value                  AS address_country,
+              phoneData.meta_value                           AS phone,
+              CAST(geoLatData.meta_value AS float)           AS geo_lat,
+              CAST(geoLngData.meta_value AS float)           AS geo_lng,
+              coverImageData.meta_value                      AS imageURL
+
+          FROM tp.wp_users AS hotel
+
+               INNER JOIN tp.wp_usermeta AS address1Data
+                          ON hotel.ID = address1Data.user_id AND address1Data.meta_key = 'address_1'
+
+               INNER JOIN tp.wp_usermeta AS address2Data
+                          ON hotel.ID = address2Data.user_id AND address2Data.meta_key = 'address_2'
+
+               INNER JOIN tp.wp_usermeta AS addressCityData
+                          ON hotel.ID = addressCityData.user_id AND addressCityData.meta_key = 'address_city'
+
+               INNER JOIN tp.wp_usermeta AS addressZipData
+                          ON hotel.ID = addressZipData.user_id AND addressZipData.meta_key = 'address_zip'
+
+               INNER JOIN tp.wp_usermeta AS addressCountryData
+                          ON hotel.ID = addressCountryData.user_id AND addressCountryData.meta_key = 'address_country'
+
+               INNER JOIN tp.wp_usermeta AS geoLatData
+                          ON hotel.ID = geoLatData.user_id AND geoLatData.meta_key = 'geo_lat'
+
+               INNER JOIN tp.wp_usermeta AS geoLngData
+                          ON hotel.ID = geoLngData.user_id AND geoLngData.meta_key = 'geo_lng'
+
+               INNER JOIN tp.wp_usermeta AS coverImageData
+                          ON hotel.ID = coverImageData.user_id AND coverImageData.meta_key = 'coverImage'
+
+               INNER JOIN tp.wp_usermeta AS phoneData
+                          ON hotel.ID = phoneData.user_id AND phoneData.meta_key = 'phone'
+
+               INNER JOIN tp.wp_usermeta AS emailData
+                          ON hotel.ID = emailData.user_id AND emailData.meta_key = 'email'
+
+          GROUP BY hotel.ID
+
+);
+
 
 ```
 
@@ -338,7 +389,43 @@ CREATE TABLE `rooms` (
 ```
 
 ```SQL
--- REQ SQL INSERTION DONNÉES DANS LA TABLE
+INSERT INTO tp.rooms (
+    SELECT
+        post.ID                                      AS idRoom,
+        post.post_author                             AS idHotel,
+        post.post_title                              AS title,
+        CAST(PriceData.meta_value AS DECIMAL(5,2))   AS price,
+        CoverImageData.meta_value                    AS coverImageUrl,
+        CAST(BedroomsCountData.meta_value AS int)    AS bedRoomsCount,
+        CAST(BathroomsCountData.meta_value AS int)   AS bathRoomsCount,
+        CAST(SurfaceData.meta_value AS int)          AS surface,
+        TypeData.meta_value                          AS type
+
+    FROM tp.wp_posts AS post
+
+             INNER JOIN tp.wp_postmeta AS SurfaceData
+                        ON post.ID = SurfaceData.post_id AND SurfaceData.meta_key = 'surface'
+
+             INNER JOIN tp.wp_postmeta AS PriceData
+                        ON post.ID = PriceData.post_id AND PriceData.meta_key = 'price'
+
+             INNER JOIN tp.wp_postmeta AS TypeData
+                        ON post.ID = TypeData.post_id AND TypeData.meta_key = 'type'
+
+             INNER JOIN tp.wp_postmeta AS BedroomsCountData
+                        ON post.ID = BedroomsCountData.post_id AND BedroomsCountData.meta_key = 'bedrooms_count'
+
+             INNER JOIN tp.wp_postmeta AS BathroomsCountData
+                        ON post.ID = BathroomsCountData.post_id AND BathroomsCountData.meta_key = 'bathrooms_count'
+
+             INNER JOIN tp.wp_postmeta AS CoverImageData
+                        ON post.ID = CoverImageData.post_id AND CoverImageData.meta_key = 'coverImage'
+
+    WHERE post.post_type = 'room'
+
+    GROUP BY post.ID
+);
+
 ```
 
 ### Table `reviews` (19 700 lignes)
@@ -355,7 +442,16 @@ CREATE TABLE `review` (
 ```
 
 ```SQL
--- REQ SQL INSERTION DONNÉES DANS LA TABLE
+INSERT INTO tp.review (idHotel, review)
+
+SELECT 
+    hotel.ID AS idHotel,
+    rating.meta_value AS review
+FROM wp_users AS hotel
+    INNER JOIN tp.wp_posts AS post
+        ON hotel.ID = post.post_author AND post.post_type = 'review'
+    INNER JOIN tp.wp_postmeta AS rating
+        ON post.ID = rating.post_id AND rating.meta_key = 'rating';
 ```
 
 

@@ -705,20 +705,20 @@ CREATE TABLE `hotels` (
 ) ENGINE=INNODB CHARSET=utf8mb4;
 
 
-INSERT INTO `hotels` (
+INSERT INTO tp.hotels (
           SELECT
               hotel.ID                                       AS idHotel,
               hotel.display_name                             AS name,
+              emailData.meta_value                           AS mail,
               address1Data.meta_value                        AS address_1,
-              address2Data.meta_value                        AS address_1,
+              address2Data.meta_value                        AS address_2,
               addressCityData.meta_value                     AS address_city,
               addressZipData.meta_value                      AS address_zip,
               addressCountryData.meta_value                  AS address_country,
+              phoneData.meta_value                           AS phone,
               CAST(geoLatData.meta_value AS float)           AS geo_lat,
               CAST(geoLngData.meta_value AS float)           AS geo_lng,
-              phoneData.meta_value                           AS phone,
-              emailData.meta_value                           AS mail,
-              coverImageData.meta_value                      AS imageURL,
+              coverImageData.meta_value                      AS imageURL
 
           FROM tp.wp_users AS hotel
 
@@ -759,7 +759,7 @@ INSERT INTO `hotels` (
 
 
 
-CREATE TABLE `rooms` (
+CREATE TABLE tp.rooms (
                          `idRoom` INT UNSIGNED NOT NULL AUTO_INCREMENT,
                          `idHotel` INT UNSIGNED NOT NULL,
                          `title` VARCHAR(255) NOT NULL,
@@ -774,17 +774,17 @@ CREATE TABLE `rooms` (
                          INDEX idH_index (`idHotel`)
 ) ENGINE=INNODB CHARSET=utf8mb4;
 
-INSERT INTO (
+INSERT INTO tp.rooms (
     SELECT
         post.ID                                      AS idRoom,
         post.post_author                             AS idHotel,
         post.post_title                              AS title,
         CAST(PriceData.meta_value AS DECIMAL(5,2))   AS price,
-        CAST(SurfaceData.meta_value AS int)          AS surface,
-        TypeData.meta_value                          AS type,
+        CoverImageData.meta_value                    AS coverImageUrl,
         CAST(BedroomsCountData.meta_value AS int)    AS bedRoomsCount,
         CAST(BathroomsCountData.meta_value AS int)   AS bathRoomsCount,
-        CoverImageData.meta_value                    AS coverImageUrl
+        CAST(SurfaceData.meta_value AS int)          AS surface,
+        TypeData.meta_value                          AS type
 
     FROM tp.wp_posts AS post
 
@@ -819,7 +819,7 @@ INSERT INTO (
 
 
 
-CREATE TABLE `review` (
+CREATE TABLE tp.review (
           `idReview` INT UNSIGNED NOT NULL AUTO_INCREMENT,
           `idHotel` INT UNSIGNED NOT NULL,
           `review` INT UNSIGNED NOT NULL,
@@ -828,15 +828,11 @@ CREATE TABLE `review` (
           INDEX idH_index (`idHotel`)
 ) ENGINE=INNODB CHARSET=utf8mb4;
 
-INSERT INTO (
-    SELECT
-        hotel.ID AS idHotel
-        ROUND(AVG(CAST(rating.meta_value AS float))) AS hotelRating,
-    FROM wp_users AS hotel
-    INNER JOIN tp.wp_posts AS post
-            ON hotel.ID = post.post_author AND post.post_type = 'review'
-    INNER JOIN tp.wp_postmeta AS rating
-            ON post.ID = rating.post_id AND rating.meta_key = 'rating'
-
-
-)
+INSERT INTO tp.review (idHotel, review)
+    SELECT hotel.ID AS idHotel,
+    rating.meta_value AS review
+     FROM wp_users AS hotel
+              INNER JOIN tp.wp_posts AS post
+                         ON hotel.ID = post.post_author AND post.post_type = 'review'
+              INNER JOIN tp.wp_postmeta AS rating
+                         ON post.ID = rating.post_id AND rating.meta_key = 'rating';
